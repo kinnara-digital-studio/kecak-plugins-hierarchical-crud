@@ -8,9 +8,9 @@
     <name>kecak-plugins-hierarchical-crud</name>
     <url>http://www.kecak.org</url>
     <scm>
-        <connection>scm:git:ssh://</connection>
-        <developerConnection>scm:git:ssh://</developerConnection>
-        <url>ssh://</url>
+        <connection>scm:git:ssh://git@gitlab.com:kinnarastudio/kecak-plugins-hierarchical-crud.git</connection>
+        <developerConnection>scm:git:ssh://git@gitlab.com:kinnarastudio/kecak-plugins-hierarchical-crud.git</developerConnection>
+        <url>ssh://git@gitlab.com:kinnarastudio/kecak-plugins-hierarchical-crud.git</url>
         <tag>HEAD</tag>
     </scm>
     <build>
