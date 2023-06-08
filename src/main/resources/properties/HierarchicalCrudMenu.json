@@ -1,0 +1,48 @@
+[
+    {
+        "title": "@@userview.hcrudmenu.edit@@",
+        "properties":
+        [
+            {
+                "name": "id",
+                "label": "ID",
+                "type": "hidden"
+            },
+            {
+                "name": "customId",
+                "label": "@@userview.hcrudmenu.customId@@",
+                "type": "textfield",
+                "regex_validation": "^[a-zA-Z0-9_]+$",
+                "validation_message": "@@userview.hcrudmenu.invalidId@@"
+            },
+            {
+                "name": "label",
+                "label": "@@userview.hcrudmenu.label@@",
+                "type": "textfield",
+                "required": "True",
+                "value": "HCRUD"
+            },
+            {
+                "name": "tables",
+                "label": "Tables",
+                "type": "grid",
+                "required": "true",
+                "columns": [
+                    {
+                        "key": "dataListId",
+                        "label": "DataList",
+                        "required": "true"
+                    },
+                    {
+                        "key": "foreignKeyFilter",
+                        "label": "Foreign Key Filter"
+                    },
+                    {
+                        "key": "formId",
+                        "label": "Form"
+                    }
+                ]
+            }
+        ]
+    }
+]

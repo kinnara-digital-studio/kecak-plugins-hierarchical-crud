@@ -1,0 +1,10 @@
+{
+  "name": "kecak-plugins-hierarchical-crud",
+  "version": "1.0.0",
+  "author": "kinnarastudio.com",
+  "license": "ISC",
+  "dependencies": {
+    "datatables.net-dt": "1.13.4",
+    "jquery-ui": "1.13.2"
+  }
+}
