@@ -8,47 +8,86 @@
 <link href="${request.contextPath}/plugin/${className}/node_modules/jquery-ui/themes/base/tabs.css" rel="stylesheet"/>
 <script type="text/javascript" src="${request.contextPath}/plugin/${className}/node_modules/jquery-ui/dist/jquery-ui.js"></script>
 
-<#-- main datalist loop -->
-<#list tables as table>
+<#-- typewatch -->
+<script type="text/javascript" src="${request.contextPath}/plugin/${className}/node_modules/jquery.typewatch/jquery.typewatch.js"></script>
 
-    <#assign dataListId=table.id>
-    <#assign dataListLabel=table.label>
+<div id="hcrud-tabs">
+    <ul>
+        <#list tables as table>
+            <#assign elementId=table?index + '_' + table.id>
+            <#assign dataListId=table.id>
+            <#assign dataListLabel=table.label>
+            <li><a href="#${elementId}_wrapper">${dataListLabel}</a></li>
+        </#list>
+    </ul>
 
-    <h1>${dataListLabel!}</h1>
-    <table id="${table?index}_${dataListId!}" class="display" style="width:100%">
-        <thead>
-            <tr>
-                <th>_id</th>
-                <#list table.columns as column>
-                    <th>${column.label!}</th>
-                </#list>
-            </tr>
-        </thead>
-        <tbody></tbody>
-        <tfoot>
-            <th>_id</th>
-            <tr>
-                <#list table.columns as column>
-                    <th>${column.label!}</th>
-                </#list>
-            </tr>
-        </tfoot>
-    </table>
-</#list>
+    <#list tables as table>
+        <#assign elementId=table?index + '_' + table.id>
+        <#assign dataListId=table.id>
+        <#assign dataListLabel=table.label>
+
+        <div id="${elementId}_wrapper">
+            <h1>${dataListLabel!}</h1>
+            <table id="${elementId}" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>_id</th>
+                        <#list table.columns as column>
+                            <th name='${column.name}'>${column.label!}</th>
+                        </#list>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot>
+                    <th>_id</th>
+                    <tr>
+                        <#list table.columns as column>
+                            <th>${column.label!}</th>
+                        </#list>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+  </#list>
+</div>
 
 <script type="text/javascript">
     $(document).ready(function () {
+        $("#hcrud-tabs").tabs();
+
         <#list tables as table>
+            <#assign elementId = table?index + '_' + table.id>
             <#assign dataListId = table.id>
             <#assign initVariable = 'init_' + table.id>
             <#assign dataTableVariable = 'dataTable_' + table.id>
 
-            var ${initVariable} = false;
+            let ${initVariable} = false;
 
-            var ${dataTableVariable} = $('#${table?index}_${dataListId!}').DataTable({
+            $('#${elementId} thead tr').clone(true).addClass('filters').appendTo('#${elementId} thead');
+
+            let ${dataTableVariable} = $('#${elementId}').DataTable({
+                orderCellsTop: true,
+                processing: true,
+                serverSide: true,
                 ajax: {
                     url: '${request.contextPath}/web/json/data/app/${appId!}/${appVersion}/datalist/${dataListId!}',
-                    dataSrc: 'data'
+                    data: function(data, setting) {
+                        data.rows = $('div#${elementId}_length select').val();
+                        data.page = $('div#${elementId}_paginate a.current').attr('data-dt-idx');
+                        let cell = $('#${elementId} .filters th');
+                        let input = $(cell).find('input');
+
+                        $(cell).each(function() {
+                            let name = $(this).attr('name');
+                            data[name] = $(this).find('input').val();
+                        });
+
+                        debugger;
+                    },
+                    dataSrc: function(response) {
+                        response.recordsTotal = response.recordsFiltered = response.total;
+                        return response.data;
+                    }
                 },
                 columns: [
                     { data : '_id', visible: false, searchable: false },
@@ -58,10 +97,29 @@
                 ],
                 initComplete: function() {
                     ${initVariable} = true;
+                    let api = this.api();
+                    api.columns().eq(0).each(function(colIdx) {
+                        // Set the header cell to contain the input element
+                        let cell = $('#${elementId} .filters th').eq($(api.column(colIdx).header()).index());
+                        let title = $(cell).text();
+                        $(cell).html('<input name="" type="text" placeholder="' + title + '" />' );
+
+                        // On every keypress in this input
+                        let input = $(cell).find('input');
+                        $(input).typeWatch({
+                            wait: 500,
+                            highlight: true,
+                            allowSubmit: true,
+                            captureLength: 1,
+                            callback : function (val) {
+                               api.ajax.reload();
+                            }
+                        });
+                    });
                 }
             });
 
-            $('#${table?index}_${dataListId!} tbody').on('click', 'tr', function () {
+            $('#${elementId} tbody').on('click', 'tr', function () {
                 if ($(this).hasClass('selected')) {
                     $(this).removeClass('selected');
                 } else {
@@ -71,7 +129,6 @@
                     let rowId = ${dataTableVariable}.row(this).data()._id;
                     <#list table.children as child>
                         <#assign dataTableChildVariable = 'dataTable_' + child.dataListId>
-
                         loadChildDataTableRows(${dataTableVariable}, ${dataTableChildVariable}, '${child.foreignKeyFilter}', rowId);
                     </#list>
                 }

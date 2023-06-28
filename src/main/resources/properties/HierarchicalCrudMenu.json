@@ -40,6 +40,10 @@
                     {
                         "key": "formId",
                         "label": "Form"
+                    },
+                    {
+                        "key": "parentDataListId",
+                        "label": "Parent"
                     }
                 ]
             }

@@ -1,20 +1,22 @@
 package com.kinnarastudio.kecakplugins.hcrudmenu.menu;
 
-import com.kinnarastudio.commons.Try;
+import com.kinnarastudio.kecakplugins.hcrudmenu.model.Table;
 import org.joget.apps.app.dao.DatalistDefinitionDao;
+import org.joget.apps.app.dao.FormDefinitionDao;
 import org.joget.apps.app.model.AppDefinition;
 import org.joget.apps.app.model.DatalistDefinition;
+import org.joget.apps.app.model.FormDefinition;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.DataList;
 import org.joget.apps.datalist.service.DataListService;
+import org.joget.apps.form.model.Form;
+import org.joget.apps.form.service.FormService;
 import org.joget.apps.userview.model.UserviewMenu;
 import org.joget.plugin.base.PluginManager;
 import org.joget.workflow.util.WorkflowUtil;
-import org.kecak.apps.exception.ApiException;
 import org.springframework.context.ApplicationContext;
 
 import javax.annotation.Nonnull;
-import javax.servlet.http.HttpServletResponse;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,9 +50,12 @@ public class HierarchicalCrudMenu extends UserviewMenu {
             dataModel.put("appId", appDefinition.getAppId());
             dataModel.put("appVersion", appDefinition.getVersion());
 
-            final List<Map<String, Object>> tables = getTables();
+            final List<Map<String, Object>> tables = getTables().stream()
+                    .map(Table::toMap)
+                    .collect(Collectors.toList());
             dataModel.put("tables", tables);
         }
+
         final String htmlContent = pluginManager.getPluginFreeMarkerTemplate(dataModel, getClassName(), template, "/messages/HierarchicalCrud");
         return htmlContent;
     }
@@ -97,52 +102,108 @@ public class HierarchicalCrudMenu extends UserviewMenu {
         return AppUtil.readPluginResource(getClass().getName(), "/properties/HierarchicalCrudMenu.json", null, true, "/messages/HierarchicalCrudMenu");
     }
 
-    protected List<Map<String, Object>> getTables() {
+//    protected List<Map<String, Object>> getTables() {
 
-        final List<Map<String, Object>> result = new ArrayList<>();
-        final Map<String, String>[] tables = getPropertyGrid("tables");
+//        final List<Map<String, Object>> result = new ArrayList<>();
+//        final Map<String, String>[] tables = getPropertyGrid("tables");
+//
+//        final Map<String, String> child = new HashMap<>();
+//        for (int i = tables.length - 1; i >= 0; i--) {
+//            final Map<String, String> table = tables[i];
+//            final String dataListId = table.get("dataListId");
+//
+//            final Optional<DataList> optDataList = optDataList(dataListId);
+//            if(!optDataList.isPresent()) {
+//                continue;
+//            }
+//
+//            final DataList dataList = optDataList.get();
+//
+//            final Map<String, Object> element = new HashMap<>();
+//
+//            element.put("id", dataList.getId());
+//            element.put("label", dataList.getName());
+//
+//            final List<Map<String, String>> columns = Arrays.stream(dataList.getColumns())
+//                    .map(c -> {
+//                        final Map<String, String> column = new HashMap<>();
+//
+//                        final String columnName = c.getName();
+//                        final String columnLabel = c.getLabel();
+//
+//                        column.put("name", columnName);
+//                        column.put("label", columnLabel);
+//
+//                        return column;
+//                    }).collect(Collectors.toList());
+//
+//            element.put("columns", columns);
+//
+//            element.put("children", child.keySet().isEmpty() ? Collections.emptyList() : Collections.singletonList(new HashMap<>(child)));
+//
+//            child.put("dataListId", dataList.getId());
+//            child.put("foreignKeyFilter", table.get("foreignKeyFilter"));
+//
+//            result.add(0, element);
+//        }
+//
+//        return result;
+//    }
 
-        final Map<String, String> child = new HashMap<>();
-        for (int i = tables.length - 1; i >= 0; i--) {
-            final Map<String, String> table = tables[i];
-            final String dataListId = table.get("dataListId");
+    protected List<Table> getTables() {
+        final List<Table> rootTables = new ArrayList<>();
+        final Map<String, Table> memo = new HashMap<>();
 
-            final Optional<DataList> optDataList = optDataList(dataListId);
-            if(!optDataList.isPresent()) {
+        final Map<String, String>[] propertyTables = getPropertyGrid("tables");
+        for (Map<String, String> propertyRow : propertyTables) {
+
+            final Table table = getTable(propertyRow, memo);
+            if (table == null) {
                 continue;
             }
 
-            final DataList dataList = optDataList.get();
+            final String parentDataListId = propertyRow.getOrDefault("parentDataListId", "");
+            if (parentDataListId.isEmpty()) {
+                rootTables.add(table);
+            }
 
-            final Map<String, Object> element = new HashMap<>();
+            final Map<String, String> propertyRowParent = Arrays.stream(propertyTables)
+                    .filter(r -> parentDataListId.equals(r.get("dataListId")))
+                    .findAny()
+                    .orElseGet(Collections::emptyMap);
 
-            element.put("id", dataList.getId());
-            element.put("label", dataList.getName());
+            final Table parentTable = getTable(propertyRowParent, memo);
+            if (parentTable == null) {
+                continue;
+            }
 
-            final List<Map<String, String>> columns = Arrays.stream(dataList.getColumns())
-                    .map(c -> {
-                        final Map<String, String> column = new HashMap<>();
-
-                        final String columnName = c.getName();
-                        final String columnLabel = c.getLabel();
-
-                        column.put("name", columnName);
-                        column.put("label", columnLabel);
-
-                        return column;
-                    }).collect(Collectors.toList());
-
-            element.put("columns", columns);
-
-            element.put("children", child.keySet().isEmpty() ? Collections.emptyList() : Collections.singletonList(new HashMap<>(child)));
-
-            child.put("dataListId", dataList.getId());
-            child.put("foreignKeyFilter", table.get("foreignKeyFilter"));
-
-            result.add(0, element);
+            parentTable.addChild(table);
         }
 
-        return result;
+        return rootTables;
+    }
+
+
+    protected Table getTable(Map<String, String> property, final Map<String, Table> memo) {
+        final String dataListId = property.getOrDefault("dataListId", "");
+        final String formId = property.getOrDefault("formId", "");
+        final String foreignKeyFilter = property.getOrDefault("foreignKeyFilter", "");
+
+        return getTable(dataListId, foreignKeyFilter, formId, memo);
+    }
+    protected Table getTable(String dataListId, String foreignKeyFilter, String formDefId, final Map<String, Table> memo) {
+        return Optional.of(dataListId)
+                .map(memo::get)
+                .orElseGet(() -> {
+                    final Optional<DataList> optDataList = optDataList(dataListId);
+                    final Optional<Form> optForm = optForm(formDefId);
+
+                    if(!optDataList.isPresent()) {
+                        return null;
+                    }
+
+                    return new Table(optDataList.get(), foreignKeyFilter, optForm.orElse(null));
+                });
     }
 
     @Nonnull
@@ -168,6 +229,19 @@ public class HierarchicalCrudMenu extends UserviewMenu {
                 .orElseGet(Stream::empty)
                 .map(o -> (Map<String, String>) o)
                 .toArray(Map[]::new);
+    }
+
+    protected Optional<Form> optForm(String formDefId) {
+        ApplicationContext appContext = AppUtil.getApplicationContext();
+        FormService formService = (FormService) appContext.getBean("formService");
+        FormDefinitionDao formDefinitionDao = (FormDefinitionDao)appContext.getBean("formDefinitionDao");
+        AppDefinition appDef = AppUtil.getCurrentAppDefinition();
+
+        return Optional.of(formDefId)
+                .map(s -> formDefinitionDao.loadById(s, appDef))
+                .map(FormDefinition::getJson)
+                .map(formService::createElementFromJson)
+                .map(e -> (Form)e);
     }
 
     protected boolean isAuthorize(@Nonnull DataList dataList) {
