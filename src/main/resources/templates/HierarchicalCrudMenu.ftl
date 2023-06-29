@@ -59,8 +59,7 @@
         <#list levels as tables>
 
             $("#hcrud-tabs-${tables?index}").tabs({
-                collapsible: true,
-                active: false
+                collapsible: true ${(tables?index == 0)?string('', ',active: false')}
             });
 
             <#list tables as table>
