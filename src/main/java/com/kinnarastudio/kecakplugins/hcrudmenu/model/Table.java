@@ -1,9 +1,9 @@
 package com.kinnarastudio.kecakplugins.hcrudmenu.model;
 
 import org.joget.apps.datalist.model.DataList;
-import org.joget.apps.datalist.model.DataListFilter;
 import org.joget.apps.form.model.Form;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -15,11 +15,20 @@ public class Table {
     private final Form form;
 
     private final String foreignKeyFilter;
-    public Table(DataList dataList, String foreignKeyFilter, Form form) {
+
+    @Nullable
+    private final Table parent;
+
+    public Table(DataList dataList, String foreignKeyFilter, Form form, Table parent) {
         this.dataList = dataList;
         this.foreignKeyFilter = foreignKeyFilter;
         this.form = form;
+        this.parent = parent;
         this.children = new ArrayList<>();
+    }
+
+    public DataList getDataList() {
+        return dataList;
     }
 
     /**
@@ -39,6 +48,7 @@ public class Table {
     public Map<String, Object> toMap() {
         return toMap(0);
     }
+
     protected Map<String, Object> toMap(final int depth) {
         final Map<String, Object> map = new HashMap<>();
 
@@ -56,8 +66,20 @@ public class Table {
                 .orElseGet(Stream::empty)
                 .map(c -> {
                     final Map<String, String> m = new HashMap<>();
-                    m.put("name", c.getName());
-                    m.put("label", c.getLabel());
+
+                    final String columnName = c.getName();
+                    m.put("name", columnName);
+
+                    final String columnLabel = c.getLabel();
+                    m.put("label", columnLabel);
+
+                    Optional.of(dataList)
+                            .map(DataList::getFilters)
+                            .map(Arrays::stream)
+                            .orElseGet(Stream::empty)
+                            .filter(f -> columnName.equals(f.getName()))
+                            .findAny().ifPresent(f -> m.put("filter", f.getName()));
+
                     return m;
                 })
                 .collect(Collectors.toList());
@@ -82,5 +104,14 @@ public class Table {
 
     public Form getForm() {
         return form;
+    }
+
+    public int getDepth() {
+        return parent == null ? 0 : (parent.getDepth() + 1);
+    }
+
+    @Nullable
+    public Table getParent() {
+        return parent;
     }
 }

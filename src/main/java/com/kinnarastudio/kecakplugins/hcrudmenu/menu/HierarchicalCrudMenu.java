@@ -17,6 +17,7 @@ import org.joget.workflow.util.WorkflowUtil;
 import org.springframework.context.ApplicationContext;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,10 +51,12 @@ public class HierarchicalCrudMenu extends UserviewMenu {
             dataModel.put("appId", appDefinition.getAppId());
             dataModel.put("appVersion", appDefinition.getVersion());
 
-            final List<Map<String, Object>> tables = getTables().stream()
-                    .map(Table::toMap)
+            final List<List<Map<String, Object>>> levels = getLevel().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .map(e -> e.getValue().stream().map(Table::toMap).collect(Collectors.toList()))
                     .collect(Collectors.toList());
-            dataModel.put("tables", tables);
+
+            dataModel.put("levels", levels);
         }
 
         final String htmlContent = pluginManager.getPluginFreeMarkerTemplate(dataModel, getClassName(), template, "/messages/HierarchicalCrud");
@@ -183,15 +186,18 @@ public class HierarchicalCrudMenu extends UserviewMenu {
         return rootTables;
     }
 
-
+    @Nullable
     protected Table getTable(Map<String, String> property, final Map<String, Table> memo) {
         final String dataListId = property.getOrDefault("dataListId", "");
         final String formId = property.getOrDefault("formId", "");
         final String foreignKeyFilter = property.getOrDefault("foreignKeyFilter", "");
+        final String parentDataListId = property.getOrDefault("parentDataListId", "");
 
-        return getTable(dataListId, foreignKeyFilter, formId, memo);
+        return getTable(dataListId, foreignKeyFilter, formId, parentDataListId, memo);
     }
-    protected Table getTable(String dataListId, String foreignKeyFilter, String formDefId, final Map<String, Table> memo) {
+
+    @Nullable
+    protected Table getTable(String dataListId, String foreignKeyFilter, String formDefId, String parentDataListId, final Map<String, Table> memo) {
         return Optional.of(dataListId)
                 .map(memo::get)
                 .orElseGet(() -> {
@@ -202,8 +208,56 @@ public class HierarchicalCrudMenu extends UserviewMenu {
                         return null;
                     }
 
-                    return new Table(optDataList.get(), foreignKeyFilter, optForm.orElse(null));
+                    final DataList dataList = optDataList.get();
+
+                    final Table parentTable = getRowProperties(parentDataListId)
+                            .map(m -> getTable(m, memo))
+                            .filter(parent -> !isCyclical(dataList.getId(), parent))
+                            .orElse(null);
+
+                    return new Table(dataList, foreignKeyFilter, optForm.orElse(null), parentTable);
                 });
+    }
+
+    protected boolean isCyclical(String id, Table table) {
+        if(id.equals(table.getDataList().getId())) {
+            return true;
+        }
+
+        final Table parent = table.getParent();
+        if(parent == null) {
+            return false;
+        } else {
+            return isCyclical(id, table.getParent());
+        }
+    }
+    protected Optional<Map<String, String>> getRowProperties(String dataListId) {
+        return Arrays.stream(getPropertyGrid("tables"))
+                .filter(m -> dataListId.equals(m.get("dataListId")))
+                .findAny();
+    }
+
+    protected Map<Integer, Collection<Table>> getLevel() {
+        final Map<Integer, Collection<Table>> levels = new HashMap<>();
+        final Map<String, Table> memo = new HashMap<>();
+
+        final Map<String, String>[] propertyTables = getPropertyGrid("tables");
+        for (Map<String, String> propertyRow : propertyTables) {
+
+            final Table table = getTable(propertyRow, memo);
+            if (table == null) {
+                continue;
+            }
+
+            final int level = table.getDepth();
+            if(!levels.containsKey(level)) {
+                levels.put(level, new ArrayList<>());
+            }
+
+            levels.get(level).add(table);
+        }
+
+        return levels;
     }
 
     @Nonnull
