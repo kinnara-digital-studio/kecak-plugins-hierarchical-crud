@@ -13,7 +13,7 @@
 <script type="text/javascript" src="${request.contextPath}/plugin/${className}/node_modules/jquery.typewatch/jquery.typewatch.js"></script>
 
 <#list levels as tables>
-    <div id="hcrud-tabs-${tables?index}">
+    <div id="hcrud-tabs-${tables?index}" class="hcrud-tabs">
         <ul>
             <#list tables as table>
                 <#assign elementId=table.id>
@@ -28,7 +28,10 @@
             <#assign dataListId=table.dataListId>
             <#assign dataListLabel=table.label>
 
-            <div id="${elementId}_wrapper">
+            <div id="${elementId}_wrapper" class="hcrud-wrapper">
+                <#if table.foreignKey?? >
+                    <input type='hidden' name='${table.foreignKey}'>
+                </#if>
                 <table id="${elementId}" class="display" style="width:100%" data-hcrud-parent="${table.parent!}" data-hcrud-foreignKey="${table.foreignKey!}" data-hcrud-children="${table.children?map(child -> child.id)?join(' ')}">
                     <thead>
                         <tr>
@@ -88,6 +91,14 @@
                             let cell = $('#${elementId} .filters th');
                             let input = $(cell).find('input');
 
+                            <#if table.foreignKey?? >
+                                let $foreignKeyFilter = $('#${elementId}_wrapper input[name="${table.foreignKey}"]');
+
+                                $foreignKeyFilter.each(function(i, e) {
+                                    data['${table.foreignKey}'] = $(e).val();
+                                });
+                            </#if>
+
                             $(cell).each(function() {
                                 let name = $(this).attr('name');
                                 data[name] = $(this).find('input').val();
@@ -95,8 +106,6 @@
 
                             if(${(tables?index != 0)?string} && !${initVariable}) {
                                 data.id = ' ';
-                            } else {
-                                data.id = undefined;
                             }
                         },
                         dataSrc: function(response) {
@@ -106,6 +115,7 @@
                     },
                     columns: [
                         { data : '_id', visible: false, searchable: false },
+                        <#-- { data : (r, t, s, m) => r.${table.foreignKey!'_id'}, visible: false, searchable: false }, -->
                         <#list table.columns as column>
                             { data : '${column.name!}' } <#if column?has_next>,</#if>
                         </#list>
@@ -119,10 +129,15 @@
                             // Set the header cell to contain the input element
                             let cell = $('#${elementId} .filters th').eq($(api.column(colIdx).header()).index());
                             let filter = $(cell).attr('data-hcrud-filter');
-                            let disabled = !(filter && filter != foreignKey);
-                            let style = 'visibility : ' + (disabled ? 'hidden' : 'visible');
+                            let name = $(cell).attr('name');
+                            let hidden = !(filter && filter != foreignKey);
                             let title = $(cell).text();
-                            $(cell).html('<input name="" style="' + style + '" type="text" placeholder="' + title + '" '+ (disabled ? 'disabled="disabled"' : '') +' />' );
+
+                            if(hidden) {
+                                $(cell).html('<input name="' + name + '" type="hidden" />' );
+                            } else {
+                                $(cell).html('<input name="' + name +'" type="text" placeholder="' + title + '" />' );
+                            }
 
                             let input = $(cell).find('input');
                             $(input).typeWatch({
@@ -155,12 +170,13 @@
         function loadChildDataTableRows(parentDataTable, parentRowId) {
             let parentId = parentDataTable.table().node().id;
 
-            $('table[data-hcrud-parent="' + parentId + '"]').each(function(i, e) {
-                let childDataTable = $(e).DataTable();
-                let parameter = $(e).attr('data-hcrud-foreignKey');
+            $('table[data-hcrud-parent="' + parentId + '"]').each(function(i, table) {
+                let childDataTable = $(table).DataTable();
+                let foreignKey = $(table).attr('data-hcrud-foreignKey');
 
-                let url = childDataTable.ajax.url().replace(/\?.+/, '') + '?' + parameter + '=' + parentRowId;
-                childDataTable.ajax.url(url).load();
+                $(table).parents('.hcrud-wrapper').find('input[name="' + foreignKey + '"]').val(parentRowId);
+
+                childDataTable.ajax.reload();
 
                 loadChildDataTableRows(childDataTable, ' ');
             });
