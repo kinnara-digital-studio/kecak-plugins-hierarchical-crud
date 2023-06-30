@@ -46,7 +46,7 @@ public class Table {
 
 
     public Map<String, Object> toMap() {
-        return toMap(0);
+        return toMap(getDepth());
     }
 
     protected Map<String, Object> toMap(final int depth) {
@@ -57,6 +57,8 @@ public class Table {
         map.put("label", dataList.getName());
 
         map.put("level", depth);
+
+        map.put("dataListId", dataList.getId());
 
         map.put("formId", Optional.ofNullable(form).map(f -> f.getPropertyString("id")).orElse(""));
 
@@ -92,13 +94,21 @@ public class Table {
                 .orElseGet(Stream::empty)
                 .filter(f -> foreignKeyFilter.equals(f.getName()))
                 .findFirst()
-                .ifPresent(f -> map.put("foreignKeyFilter", f.getName()));
+                .ifPresent(f -> map.put("foreignKey", f.getName()));
 
+        // children
         final List<Map<String, Object>> children = getChildren().stream()
-                .map(t -> t.toMap(depth + 1))
+                .map(Table::toMap)
                 .collect(Collectors.toList());
 
         map.put("children", children);
+
+        // parent
+        Optional.ofNullable(parent)
+                .map(Table::getDataList)
+                .map(DataList::getId)
+                .ifPresent(s -> map.put("parent", s));
+
         return map;
     }
 

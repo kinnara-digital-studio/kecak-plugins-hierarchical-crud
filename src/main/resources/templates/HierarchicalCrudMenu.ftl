@@ -16,30 +16,31 @@
     <div id="hcrud-tabs-${tables?index}">
         <ul>
             <#list tables as table>
-                <#assign elementId=table?index + '_' + table.id>
-                <#assign dataListId=table.id>
+                <#assign elementId=table.id>
+                <#assign dataListId=table.dataListId>
                 <#assign dataListLabel=table.label>
                 <li><a href="#${elementId}_wrapper">${dataListLabel}</a></li>
             </#list>
         </ul>
 
         <#list tables as table>
-            <#assign elementId=table?index + '_' + table.id>
-            <#assign dataListId=table.id>
+            <#assign elementId=table.id>
+            <#assign dataListId=table.dataListId>
             <#assign dataListLabel=table.label>
 
             <div id="${elementId}_wrapper">
-                <h1>${dataListLabel!}</h1>
-                <table id="${elementId}" class="display" style="width:100%">
+                <table id="${elementId}" class="display" style="width:100%" data-hcrud-parent="${table.parent!}" data-hcrud-foreignKey="${table.foreignKey!}" data-hcrud-children="${table.children?map(child -> child.id)?join(' ')}">
                     <thead>
                         <tr>
                             <th>_id</th>
                             <#list table.columns as column>
-                                <th name='${column.name}' data-kecak-filter='${column.filter!}' >${column.label!}</th>
+                                <th name='${column.name}' data-hcrud-filter='${column.filter!}' >${column.label!}</th>
                             </#list>
                         </tr>
                     </thead>
                     <tbody></tbody>
+
+                    <#--
                     <tfoot>
                         <th>_id</th>
                         <tr>
@@ -48,6 +49,7 @@
                             </#list>
                         </tr>
                     </tfoot>
+                    -->
                 </table>
             </div>
         </#list>
@@ -63,8 +65,8 @@
             });
 
             <#list tables as table>
-                <#assign elementId = table?index + '_' + table.id>
-                <#assign dataListId = table.id>
+                <#assign elementId = table.id>
+                <#assign dataListId = table.dataListId>
                 <#assign initVariable = 'init_' + table.id>
                 <#assign dataTableVariable = 'dataTable_' + table.id>
 
@@ -72,10 +74,12 @@
 
                 $('#${elementId} thead tr').clone(true).addClass('filters').appendTo('#${elementId} thead');
 
-                let ${dataTableVariable} = $('#${elementId}').DataTable({
+                let ${dataTableVariable} = $('table#${elementId}').DataTable({
                     orderCellsTop: true,
                     processing: true,
                     serverSide: true,
+                    deferRender: true,
+                    searching: false,
                     ajax: {
                         url: '${request.contextPath}/web/json/data/app/${appId!}/${appVersion}/datalist/${dataListId!}',
                         data: function(data, setting) {
@@ -89,7 +93,11 @@
                                 data[name] = $(this).find('input').val();
                             });
 
-                            debugger;
+                            if(${(tables?index != 0)?string} && !${initVariable}) {
+                                data.id = ' ';
+                            } else {
+                                data.id = undefined;
+                            }
                         },
                         dataSrc: function(response) {
                             response.recordsTotal = response.recordsFiltered = response.total;
@@ -106,14 +114,16 @@
                         ${initVariable} = true;
                         let api = this.api();
                         api.columns().eq(0).each(function(colIdx) {
+                            let foreignKey = $('table#${elementId}').attr('data-hcrud-foreignKey');
+
                             // Set the header cell to contain the input element
                             let cell = $('#${elementId} .filters th').eq($(api.column(colIdx).header()).index());
-                            let filter = $(cell).attr('data-kecak-filter');
-                            let style = 'visibility : ' + (filter ? 'visible' : 'hidden');
+                            let filter = $(cell).attr('data-hcrud-filter');
+                            let disabled = !(filter && filter != foreignKey);
+                            let style = 'visibility : ' + (disabled ? 'hidden' : 'visible');
                             let title = $(cell).text();
-                            $(cell).html('<input name="" style="' + style + '" type="text" placeholder="' + title + '" />' );
+                            $(cell).html('<input name="" style="' + style + '" type="text" placeholder="' + title + '" '+ (disabled ? 'disabled="disabled"' : '') +' />' );
 
-                            // On every keypress in this input
                             let input = $(cell).find('input');
                             $(input).typeWatch({
                                 wait: 500,
@@ -134,10 +144,7 @@
                         $(this).addClass('selected');
 
                         let rowId = ${dataTableVariable}.row(this).data()._id;
-                        <#list table.children as child>
-                            <#assign dataTableChildVariable = 'dataTable_' + child.dataListId>
-                            loadChildDataTableRows(${dataTableVariable}, ${dataTableChildVariable}, '${child.foreignKeyFilter}', rowId);
-                        </#list>
+                        loadChildDataTableRows(${dataTableVariable},  rowId);
                     }
                 });
 
@@ -145,10 +152,18 @@
 
         </#list>
 
-        function loadChildDataTableRows(parentDataTable, childDataTable, parameter, parentRowId) {
-            let url = childDataTable.ajax.url().replace(/\?.+/, '') + '?' + parameter + '=' + parentRowId;
-            childDataTable.ajax.url(url);
-            childDataTable.ajax.reload();
+        function loadChildDataTableRows(parentDataTable, parentRowId) {
+            let parentId = parentDataTable.table().node().id;
+
+            $('table[data-hcrud-parent="' + parentId + '"]').each(function(i, e) {
+                let childDataTable = $(e).DataTable();
+                let parameter = $(e).attr('data-hcrud-foreignKey');
+
+                let url = childDataTable.ajax.url().replace(/\?.+/, '') + '?' + parameter + '=' + parentRowId;
+                childDataTable.ajax.url(url).load();
+
+                loadChildDataTableRows(childDataTable, ' ');
+            });
         }
     });
 </script>

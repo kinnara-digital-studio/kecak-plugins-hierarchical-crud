@@ -105,93 +105,12 @@ public class HierarchicalCrudMenu extends UserviewMenu {
         return AppUtil.readPluginResource(getClass().getName(), "/properties/HierarchicalCrudMenu.json", null, true, "/messages/HierarchicalCrudMenu");
     }
 
-//    protected List<Map<String, Object>> getTables() {
-
-//        final List<Map<String, Object>> result = new ArrayList<>();
-//        final Map<String, String>[] tables = getPropertyGrid("tables");
-//
-//        final Map<String, String> child = new HashMap<>();
-//        for (int i = tables.length - 1; i >= 0; i--) {
-//            final Map<String, String> table = tables[i];
-//            final String dataListId = table.get("dataListId");
-//
-//            final Optional<DataList> optDataList = optDataList(dataListId);
-//            if(!optDataList.isPresent()) {
-//                continue;
-//            }
-//
-//            final DataList dataList = optDataList.get();
-//
-//            final Map<String, Object> element = new HashMap<>();
-//
-//            element.put("id", dataList.getId());
-//            element.put("label", dataList.getName());
-//
-//            final List<Map<String, String>> columns = Arrays.stream(dataList.getColumns())
-//                    .map(c -> {
-//                        final Map<String, String> column = new HashMap<>();
-//
-//                        final String columnName = c.getName();
-//                        final String columnLabel = c.getLabel();
-//
-//                        column.put("name", columnName);
-//                        column.put("label", columnLabel);
-//
-//                        return column;
-//                    }).collect(Collectors.toList());
-//
-//            element.put("columns", columns);
-//
-//            element.put("children", child.keySet().isEmpty() ? Collections.emptyList() : Collections.singletonList(new HashMap<>(child)));
-//
-//            child.put("dataListId", dataList.getId());
-//            child.put("foreignKeyFilter", table.get("foreignKeyFilter"));
-//
-//            result.add(0, element);
-//        }
-//
-//        return result;
-//    }
-
-    protected List<Table> getTables() {
-        final List<Table> rootTables = new ArrayList<>();
-        final Map<String, Table> memo = new HashMap<>();
-
-        final Map<String, String>[] propertyTables = getPropertyGrid("tables");
-        for (Map<String, String> propertyRow : propertyTables) {
-
-            final Table table = getTable(propertyRow, memo);
-            if (table == null) {
-                continue;
-            }
-
-            final String parentDataListId = propertyRow.getOrDefault("parentDataListId", "");
-            if (parentDataListId.isEmpty()) {
-                rootTables.add(table);
-            }
-
-            final Map<String, String> propertyRowParent = Arrays.stream(propertyTables)
-                    .filter(r -> parentDataListId.equals(r.get("dataListId")))
-                    .findAny()
-                    .orElseGet(Collections::emptyMap);
-
-            final Table parentTable = getTable(propertyRowParent, memo);
-            if (parentTable == null) {
-                continue;
-            }
-
-            parentTable.addChild(table);
-        }
-
-        return rootTables;
-    }
-
     @Nullable
-    protected Table getTable(Map<String, String> property, final Map<String, Table> memo) {
-        final String dataListId = property.getOrDefault("dataListId", "");
-        final String formId = property.getOrDefault("formId", "");
-        final String foreignKeyFilter = property.getOrDefault("foreignKeyFilter", "");
-        final String parentDataListId = property.getOrDefault("parentDataListId", "");
+    protected Table getTable(Map<String, String> properties, final Map<String, Table> memo) {
+        final String dataListId = properties.getOrDefault("dataListId", "");
+        final String formId = properties.getOrDefault("formId", "");
+        final String foreignKeyFilter = properties.getOrDefault("foreignKeyFilter", "");
+        final String parentDataListId = properties.getOrDefault("parentDataListId", "");
 
         return getTable(dataListId, foreignKeyFilter, formId, parentDataListId, memo);
     }
@@ -215,7 +134,15 @@ public class HierarchicalCrudMenu extends UserviewMenu {
                             .filter(parent -> !isCyclical(dataList.getId(), parent))
                             .orElse(null);
 
-                    return new Table(dataList, foreignKeyFilter, optForm.orElse(null), parentTable);
+                    final Table childTable = new Table(dataList, foreignKeyFilter, optForm.orElse(null), parentTable);
+
+                    if(parentTable != null) {
+                        parentTable.addChild(childTable);
+                    }
+
+                    memo.put(dataListId, childTable);
+
+                    return childTable;
                 });
     }
 
