@@ -1,6 +1,9 @@
 package com.kinnarastudio.kecakplugins.hcrudmenu.menu;
 
+import com.kinnarastudio.commons.Try;
+import com.kinnarastudio.kecakplugins.hcrudmenu.formBinder.HierarchicalCrudFormBinder;
 import com.kinnarastudio.kecakplugins.hcrudmenu.model.Table;
+import com.kinnarastudio.kecakplugins.hcrudmenu.service.MapUtils;
 import org.joget.apps.app.dao.DatalistDefinitionDao;
 import org.joget.apps.app.dao.FormDefinitionDao;
 import org.joget.apps.app.model.AppDefinition;
@@ -53,7 +56,7 @@ public class HierarchicalCrudMenu extends UserviewMenu {
 
             final List<List<Map<String, Object>>> levels = getLevel().entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .map(e -> e.getValue().stream().map(Table::toMap).collect(Collectors.toList()))
+                    .map(e -> e.getValue().stream().map(MapUtils::toMap).collect(Collectors.toList()))
                     .collect(Collectors.toList());
 
             dataModel.put("levels", levels);
@@ -121,7 +124,7 @@ public class HierarchicalCrudMenu extends UserviewMenu {
                 .map(memo::get)
                 .orElseGet(() -> {
                     final Optional<DataList> optDataList = optDataList(dataListId);
-                    final Optional<Form> optForm = optForm(formDefId);
+                    final Optional<Form> optForm = MapUtils.optForm(formDefId);
 
                     if(!optDataList.isPresent()) {
                         return null;
@@ -210,19 +213,6 @@ public class HierarchicalCrudMenu extends UserviewMenu {
                 .orElseGet(Stream::empty)
                 .map(o -> (Map<String, String>) o)
                 .toArray(Map[]::new);
-    }
-
-    protected Optional<Form> optForm(String formDefId) {
-        ApplicationContext appContext = AppUtil.getApplicationContext();
-        FormService formService = (FormService) appContext.getBean("formService");
-        FormDefinitionDao formDefinitionDao = (FormDefinitionDao)appContext.getBean("formDefinitionDao");
-        AppDefinition appDef = AppUtil.getCurrentAppDefinition();
-
-        return Optional.of(formDefId)
-                .map(s -> formDefinitionDao.loadById(s, appDef))
-                .map(FormDefinition::getJson)
-                .map(formService::createElementFromJson)
-                .map(e -> (Form)e);
     }
 
     protected boolean isAuthorize(@Nonnull DataList dataList) {

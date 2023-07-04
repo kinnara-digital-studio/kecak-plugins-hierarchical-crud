@@ -5,6 +5,10 @@
 <link href="${request.contextPath}/plugin/${className}/node_modules/datatables.net-dt/css/jquery.dataTables.min.css" rel="stylesheet"/>
 <script type="text/javascript" src="${request.contextPath}/plugin/${className}/node_modules/datatables.net/js/jquery.dataTables.js"></script>
 
+<link href="${request.contextPath}/plugin/${className}/node_modules/datatables.net-buttons-dt/css/buttons.dataTables.css" rel="stylesheet"/>
+<script type="text/javascript" src="${request.contextPath}/plugin/${className}/node_modules/datatables.net-buttons-dt/js/buttons.dataTables.js"></script>
+<script type="text/javascript" src="${request.contextPath}/plugin/${className}/node_modules/datatables.net-buttons/js/dataTables.buttons.js"></script>
+
 <#-- jquery-ui -->
 <link href="${request.contextPath}/plugin/${className}/node_modules/jquery-ui/themes/base/tabs.css" rel="stylesheet"/>
 <script type="text/javascript" src="${request.contextPath}/plugin/${className}/node_modules/jquery-ui/dist/jquery-ui.js"></script>
@@ -29,6 +33,13 @@
             <#assign dataListLabel=table.label>
 
             <div id="${elementId}_wrapper" class="hcrud-wrapper">
+                <#-- <input type="hidden" disabled="disabled" id="formUrl" value="${table.formUrl}" /> -->
+                <input type="hidden" disabled="disabled" id="formUrl" value="${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=Submit" />
+                <input type="hidden" disabled="disabled" id="formJson" value="${table.jsonForm}" />
+                <input type="hidden" disabled="disabled" id="nonce" value="${table.nonce}" />
+                <input type="hidden" disabled="disabled" id="height" value="${table.height}" />
+                <input type="hidden" disabled="disabled" id="width" value="${table.width}" />
+
                 <#if table.foreignKey?? >
                     <input type='hidden' name='${table.foreignKey}'>
                 </#if>
@@ -36,6 +47,15 @@
                     <thead>
                         <tr>
                             <th>_id</th>
+
+                            <#if table.editable!false >
+                                <th></th>
+                            </#if>
+
+                            <#if table.deletable!false >
+                                <th></th>
+                            </#if>
+
                             <#list table.columns as column>
                                 <th name='${column.name}' data-hcrud-filter='${column.filter!}' >${column.label!}</th>
                             </#list>
@@ -75,13 +95,28 @@
 
                 let ${initVariable} = false;
 
+                $('#${elementId}').on('click', 'td.inlineaction-edit', function (e) {
+                    e.preventDefault();
+
+                    let formUrl = $('#${elementId}_wrapper input#formUrl').val();
+                    let jsonForm = JSON.parse($('#${elementId}_wrapper input#formJson').val());
+                    let nonce = $('#${elementId}_wrapper input#nonce').val();
+                    let callback = 'onFormSubmitted';
+                    let jsonSetting = { };
+                    let primaryKey = ${dataTableVariable}.row(this).data()._id;
+                    let jsonData = { id : primaryKey };
+                    let height = $('#${elementId}_wrapper input#height').val();
+                    let width = $('#${elementId}_wrapper input#width').val();
+
+                    popupForm('${elementId}', formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, height, width)
+               });
+
                 $('#${elementId} thead tr').clone(true).addClass('filters').appendTo('#${elementId} thead');
 
                 let ${dataTableVariable} = $('table#${elementId}').DataTable({
                     orderCellsTop: true,
                     processing: true,
                     serverSide: true,
-                    deferRender: true,
                     searching: false,
                     ajax: {
                         url: '${request.contextPath}/web/json/data/app/${appId!}/${appVersion}/datalist/${dataListId!}',
@@ -115,6 +150,25 @@
                     },
                     columns: [
                         { data : '_id', visible: false, searchable: false },
+
+                        <#if table.editable!false >
+                            {
+                                data: null,
+                                className: 'dt-center inlineaction-edit',
+                                defaultContent: '<i class="fa fa-pencil"/>',
+                                orderable: false
+                            },
+                        </#if>
+
+                        <#if table.deletable!false >
+                            {
+                                data: null,
+                                className: 'dt-center inlineaction-edit',
+                                defaultContent: '<i class="fa fa-trash"/>',
+                                orderable: false
+                            },
+                        </#if>
+
                         <#-- { data : (r, t, s, m) => r.${table.foreignKey!'_id'}, visible: false, searchable: false }, -->
                         <#list table.columns as column>
                             { data : '${column.name!}' } <#if column?has_next>,</#if>
@@ -181,5 +235,40 @@
                 loadChildDataTableRows(childDataTable, ' ');
             });
         }
+
+        function popupForm(elementId, formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, height, width) {
+            if (jsonData.id) {
+                if (formUrl.indexOf("?") != -1) {
+                    formUrl += "&";
+                } else {
+                    formUrl += "?";
+                }
+                formUrl += "id=" + jsonData.id;
+            }
+            formUrl += UI.userviewThemeParams();
+
+            var params = {
+                _json : JSON.stringify(jsonForm),
+                _callback : callback,
+                _setting : JSON.stringify(jsonSetting),
+                jsonrow : JSON.stringify(jsonData),
+                _nonce : nonce
+            };
+
+            var frameId = getFrameId();
+            debugger;
+            JPopup.show(frameId, formUrl, params, "", width, height);
+        }
     });
+
+    function getFrameId() {
+        return 'hcrudFrame';
+    }
+
+    function onFormSubmitted(args) {
+        let result = JSON.parse(args.result);
+        let frameId = getFrameId();
+        JPopup.hide(frameId);
+        debugger;
+    }
 </script>

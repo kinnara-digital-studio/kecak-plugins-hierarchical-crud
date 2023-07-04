@@ -3,6 +3,7 @@ package com.kinnarastudio.kecakplugins.hcrudmenu;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import com.kinnarastudio.kecakplugins.hcrudmenu.formBinder.HierarchicalCrudFormBinder;
 import com.kinnarastudio.kecakplugins.hcrudmenu.menu.HierarchicalCrudMenu;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -17,6 +18,7 @@ public class Activator implements BundleActivator {
 
         //Register plugin here
         registrationList.add(context.registerService(HierarchicalCrudMenu.class.getName(), new HierarchicalCrudMenu(), null));
+        registrationList.add(context.registerService(HierarchicalCrudFormBinder.class.getName(), new HierarchicalCrudFormBinder(), null));
     }
 
     public void stop(BundleContext context) {

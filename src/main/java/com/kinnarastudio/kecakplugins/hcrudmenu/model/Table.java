@@ -4,9 +4,9 @@ import org.joget.apps.datalist.model.DataList;
 import org.joget.apps.form.model.Form;
 
 import javax.annotation.Nullable;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Table {
     private final DataList dataList;
@@ -44,74 +44,6 @@ public class Table {
         children.add(child);
     }
 
-
-    public Map<String, Object> toMap() {
-        return toMap(getDepth());
-    }
-
-    protected Map<String, Object> toMap(final int depth) {
-        final Map<String, Object> map = new HashMap<>();
-
-        map.put("id", dataList.getId());
-
-        map.put("label", dataList.getName());
-
-        map.put("level", depth);
-
-        map.put("dataListId", dataList.getId());
-
-        map.put("formId", Optional.ofNullable(form).map(f -> f.getPropertyString("id")).orElse(""));
-
-        final List<Map<String, String>> columns = Optional.of(dataList)
-                .map(DataList::getColumns)
-                .map(Arrays::stream)
-                .orElseGet(Stream::empty)
-                .map(c -> {
-                    final Map<String, String> m = new HashMap<>();
-
-                    final String columnName = c.getName();
-                    m.put("name", columnName);
-
-                    final String columnLabel = c.getLabel();
-                    m.put("label", columnLabel);
-
-                    Optional.of(dataList)
-                            .map(DataList::getFilters)
-                            .map(Arrays::stream)
-                            .orElseGet(Stream::empty)
-                            .filter(f -> columnName.equals(f.getName()))
-                            .findAny().ifPresent(f -> m.put("filter", f.getName()));
-
-                    return m;
-                })
-                .collect(Collectors.toList());
-
-        map.put("columns", columns);
-
-        Optional.of(dataList)
-                .map(DataList::getFilters)
-                .map(Arrays::stream)
-                .orElseGet(Stream::empty)
-                .filter(f -> foreignKeyFilter.equals(f.getName()))
-                .findFirst()
-                .ifPresent(f -> map.put("foreignKey", f.getName()));
-
-        // children
-        final List<Map<String, Object>> children = getChildren().stream()
-                .map(Table::toMap)
-                .collect(Collectors.toList());
-
-        map.put("children", children);
-
-        // parent
-        Optional.ofNullable(parent)
-                .map(Table::getDataList)
-                .map(DataList::getId)
-                .ifPresent(s -> map.put("parent", s));
-
-        return map;
-    }
-
     public Form getForm() {
         return form;
     }
@@ -123,5 +55,9 @@ public class Table {
     @Nullable
     public Table getParent() {
         return parent;
+    }
+
+    public String getForeignKeyFilter() {
+        return foreignKeyFilter;
     }
 }
