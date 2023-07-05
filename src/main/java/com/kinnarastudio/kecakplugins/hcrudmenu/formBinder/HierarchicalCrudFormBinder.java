@@ -57,7 +57,8 @@ public class HierarchicalCrudFormBinder extends WorkflowFormBinder
             }
         }));
 
-        return super.store(form, submittedRows, formData);
+        FormRowSet store = super.store(form, submittedRows, formData);
+        return store;
     }
 
     @Override

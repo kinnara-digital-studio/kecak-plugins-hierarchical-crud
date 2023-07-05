@@ -102,7 +102,7 @@
                     let jsonForm = JSON.parse($('#${elementId}_wrapper input#formJson').val());
                     let nonce = $('#${elementId}_wrapper input#nonce').val();
                     let callback = 'onFormSubmitted';
-                    let jsonSetting = { };
+                    let jsonSetting = { 'elementId' : '${elementId}' };
                     let primaryKey = ${dataTableVariable}.row(this).data()._id;
                     let jsonData = { id : primaryKey };
                     let height = $('#${elementId}_wrapper input#height').val();
@@ -250,7 +250,7 @@
             var params = {
                 _json : JSON.stringify(jsonForm),
                 _callback : callback,
-                _setting : JSON.stringify(jsonSetting),
+                _setting : JSON.stringify(jsonSetting).replace(/"/g, "'"),
                 jsonrow : JSON.stringify(jsonData),
                 _nonce : nonce
             };
@@ -266,9 +266,12 @@
     }
 
     function onFormSubmitted(args) {
+        debugger;
         let result = JSON.parse(args.result);
+        let elementId = args.elementId;
+        let table = $('#' + elementId).DataTable();
+        table.ajax.reload();
         let frameId = getFrameId();
         JPopup.hide(frameId);
-        debugger;
     }
 </script>
