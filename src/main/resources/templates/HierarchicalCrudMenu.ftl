@@ -104,7 +104,7 @@
                     searching: false,
                     dom: 'B<"clear">lfrtip',
                     buttons: [{
-                        text: 'Create',
+                        text: '<i class="fa fa-file"/>',
                         action: function ( e, dt, node, config ) {
                             debugger;
                             let $table = $(dt.table().node());
@@ -182,7 +182,6 @@
                             },
                         </#if>
 
-                        <#-- { data : (r, t, s, m) => r.${table.foreignKey!'_id'}, visible: false, searchable: false }, -->
                         <#list table.columns as column>
                             { data : '${column.name!}' } <#if column?has_next>,</#if>
                         </#list>
