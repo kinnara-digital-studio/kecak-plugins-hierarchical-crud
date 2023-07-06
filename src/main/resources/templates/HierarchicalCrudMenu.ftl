@@ -41,7 +41,7 @@
                 <input type="hidden" disabled="disabled" id="width" value="${table.width}" />
 
                 <#if table.foreignKey?? >
-                    <input type='hidden' name='${table.foreignKey}'>
+                    <input type='hidden' disabled name='${table.foreignKey}'>
                 </#if>
                 <table id="${elementId}" class="display" style="width:100%" data-hcrud-parent="${table.parent!}" data-hcrud-foreignKey="${table.foreignKey!}" data-hcrud-children="${table.children?map(child -> child.id)?join(' ')}">
                     <thead>
@@ -95,22 +95,6 @@
 
                 let ${initVariable} = false;
 
-                $('#${elementId}').on('click', 'td.inlineaction-edit', function (e) {
-                    e.preventDefault();
-
-                    let formUrl = $('#${elementId}_wrapper input#formUrl').val();
-                    let jsonForm = JSON.parse($('#${elementId}_wrapper input#formJson').val());
-                    let nonce = $('#${elementId}_wrapper input#nonce').val();
-                    let callback = 'onFormSubmitted';
-                    let jsonSetting = { 'elementId' : '${elementId}' };
-                    let primaryKey = ${dataTableVariable}.row(this).data()._id;
-                    let jsonData = { id : primaryKey };
-                    let height = $('#${elementId}_wrapper input#height').val();
-                    let width = $('#${elementId}_wrapper input#width').val();
-
-                    popupForm('${elementId}', formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, height, width)
-               });
-
                 $('#${elementId} thead tr').clone(true).addClass('filters').appendTo('#${elementId} thead');
 
                 let ${dataTableVariable} = $('table#${elementId}').DataTable({
@@ -118,6 +102,35 @@
                     processing: true,
                     serverSide: true,
                     searching: false,
+                    dom: 'B<"clear">lfrtip',
+                    buttons: [{
+                        text: 'Create',
+                        action: function ( e, dt, node, config ) {
+                            debugger;
+                            let $table = $(dt.table().node());
+                            let $wrapper = $table.parents('.hcrud-wrapper');
+                            let formUrl = $wrapper.find('input#formUrl').val();
+                            let jsonForm = JSON.parse($wrapper.find('input#formJson').val());
+                            let nonce = $wrapper.find('input#nonce').val();
+                            let callback = 'onFormSubmitted';
+                            let elementId = dt.table().node().id;
+                            let jsonSetting = { elementId : elementId };
+                            let jsonData = { };
+
+                            <#if table.parent ??>
+                                let foreignKeyField = $table.attr('data-hcrud-foreignKey');
+                                let foreignKeyValue = $wrapper.find('input[name="' + foreignKeyField + '"]').val();
+                                let jsonFk = { field : foreignKeyField, value : foreignKeyValue};
+                            <#else>
+                                let jsonFk = {};
+                            </#if>
+
+                            let height = $wrapper.find('input#height').val();
+                            let width = $wrapper.find('input#width').val();
+
+                            popupForm(elementId, formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, jsonFk, height, width);
+                        }
+                    }],
                     ajax: {
                         url: '${request.contextPath}/web/json/data/app/${appId!}/${appVersion}/datalist/${dataListId!}',
                         data: function(data, setting) {
@@ -205,6 +218,23 @@
                     }
                 });
 
+                $('#${elementId}').on('click', 'td.inlineaction-edit', function (e) {
+                    e.preventDefault();
+
+                    let formUrl = $('#${elementId}_wrapper input#formUrl').val();
+                    let jsonForm = JSON.parse($('#${elementId}_wrapper input#formJson').val());
+                    let nonce = $('#${elementId}_wrapper input#nonce').val();
+                    let callback = 'onFormSubmitted';
+                    let jsonSetting = { 'elementId' : '${elementId}' };
+                    let primaryKey = ${dataTableVariable}.row(this).data()._id;
+                    let jsonData = { id : primaryKey };
+                    let jsonFk = { };
+                    let height = $('#${elementId}_wrapper input#height').val();
+                    let width = $('#${elementId}_wrapper input#width').val();
+
+                    popupForm('${elementId}', formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, jsonFk, height, width)
+                });
+
                 $('#${elementId} tbody').on('click', 'tr', function () {
                     if ($(this).hasClass('selected')) {
                         $(this).removeClass('selected');
@@ -236,7 +266,7 @@
             });
         }
 
-        function popupForm(elementId, formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, height, width) {
+        function popupForm(elementId, formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, jsonFk, height, width) {
             if (jsonData.id) {
                 if (formUrl.indexOf("?") != -1) {
                     formUrl += "&";
@@ -252,7 +282,8 @@
                 _callback : callback,
                 _setting : JSON.stringify(jsonSetting).replace(/"/g, "'"),
                 jsonrow : JSON.stringify(jsonData),
-                _nonce : nonce
+                _nonce : nonce,
+                _foreignkey : JSON.stringify(jsonFk)
             };
 
             var frameId = getFrameId();

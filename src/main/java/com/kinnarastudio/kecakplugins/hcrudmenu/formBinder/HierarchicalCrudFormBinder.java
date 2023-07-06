@@ -52,13 +52,12 @@ public class HierarchicalCrudFormBinder extends WorkflowFormBinder
                 .orElseGet(FormRow::new);
 
         dbEntry.forEach((key, dbValue) -> submittedRows.forEach(submittedRow -> {
-            if(!submittedRow.containsKey(key)) {
+            if (!submittedRow.containsKey(key)) {
                 submittedRow.setProperty(String.valueOf(key), String.valueOf(dbValue));
             }
         }));
 
-        FormRowSet store = super.store(form, submittedRows, formData);
-        return store;
+        return super.store(form, submittedRows, formData);
     }
 
     @Override
@@ -70,16 +69,33 @@ public class HierarchicalCrudFormBinder extends WorkflowFormBinder
                 .filter(this::isNotEmpty)
                 .map(Try.onFunction(JSONObject::new))
                 .map(json -> JSONStream.of(json, Try.onBiFunction(JSONObject::get))
-                        .collect(Collectors.toMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue, (oldValue, newValue) -> newValue, FormRow::new)))
+                        .collect(Collectors.toMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue, this::overrideValue, FormRow::new)))
                 .map(FormRow::getId)
                 .orElse(primaryKey);
 
         final String formDefId = element.getPropertyString(FormUtil.PROPERTY_ID);
         final Form form = MapUtils.optForm(formDefId).orElse(null);
-        FormRowSet load = super.load(form, key, formData);
-        if(load.isEmpty()) {
-            load.add(new FormRow());
-        }
+        final FormRowSet load = Optional.ofNullable(super.load(form, key, formData))
+                .orElseGet(() -> {
+                    // new record
+                    FormRowSet rowSet = new FormRowSet();
+
+                    final FormRow row = new FormRow();
+                    rowSet.add(row);
+
+                    return rowSet;
+                });
+
+        Optional.of("_foreignkey")
+                .map(formData::getRequestParameter)
+                .map(Try.onFunction(JSONObject::new))
+                .ifPresent(Try.onConsumer(json -> {
+                    final String field = json.getString("field");
+                    final String value = json.getString("value");
+
+                    load.stream().findFirst().ifPresent(r -> r.setProperty(field, value));
+                }));
+
         return load;
     }
 
@@ -115,4 +131,9 @@ public class HierarchicalCrudFormBinder extends WorkflowFormBinder
     public String getDescription() {
         return getClass().getPackage().getImplementationTitle();
     }
+
+    protected <T> T overrideValue(T oldVal, T newVal) {
+        return newVal;
+    }
+
 }
