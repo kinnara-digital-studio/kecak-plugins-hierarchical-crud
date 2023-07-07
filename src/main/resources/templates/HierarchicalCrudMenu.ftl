@@ -16,6 +16,8 @@
 <#-- typewatch -->
 <script type="text/javascript" src="${request.contextPath}/plugin/${className}/node_modules/jquery.typewatch/jquery.typewatch.js"></script>
 
+<#assign fooValue = 'uhyfusaydbfusdfsa' >
+
 <#list levels as tables>
     <div id="hcrud-tabs-${tables?index}" class="hcrud-tabs">
         <ul>
@@ -41,7 +43,8 @@
                 <input type="hidden" disabled="disabled" id="width" value="${table.width}" />
 
                 <#if table.foreignKey?? >
-                    <input type='hidden' disabled name='${table.foreignKey}'>
+                    <input type='hidden' disabled id='foreignKey' name='foreignKey' value='${fooValue}'>
+                    <input type='hidden' disabled id='${table.foreignKey}' name='${table.foreignKey}' value='${fooValue}'>
                 </#if>
                 <table id="${elementId}" class="display" style="width:100%" data-hcrud-parent="${table.parent!}" data-hcrud-foreignKey="${table.foreignKey!}" data-hcrud-children="${table.children?map(child -> child.id)?join(' ')}">
                     <thead>
@@ -104,6 +107,11 @@
                     searching: false,
                     dom: 'B<"clear">lfrtip',
                     buttons: [{
+                        text: '<i class="fa fa-refresh"/>',
+                        action: function ( e, dt, node, config ) {
+                            dt.ajax.reload();
+                        }
+                    }, {
                         text: '<i class="fa fa-file"/>',
                         action: function ( e, dt, node, config ) {
                             debugger;
@@ -134,27 +142,43 @@
                     ajax: {
                         url: '${request.contextPath}/web/json/data/app/${appId!}/${appVersion}/datalist/${dataListId!}',
                         data: function(data, setting) {
+                            debugger;
+
                             data.rows = $('div#${elementId}_length select').val();
                             data.page = $('div#${elementId}_paginate a.current').attr('data-dt-idx');
                             let cell = $('#${elementId} .filters th');
                             let input = $(cell).find('input');
 
                             <#if table.foreignKey?? >
-                                let $foreignKeyFilter = $('#${elementId}_wrapper input[name="${table.foreignKey}"]');
+                                let $foreignKeyFilter = $('#${elementId}_wrapper input#foreignKey');
 
                                 $foreignKeyFilter.each(function(i, e) {
-                                    data['${table.foreignKey}'] = $(e).val();
+                                    data.${table.foreignKey} = $(e).val();
                                 });
                             </#if>
 
                             $(cell).each(function() {
                                 let name = $(this).attr('name');
-                                data[name] = $(this).find('input').val();
+                                let isForeignKey = name == "${table.foreignKey!''}";
+                                if(!isForeignKey) {
+                                    let $filter = $(this).find('input');
+                                    let value = $filter.val();
+
+                                    if(name && value) {
+                                        data[name] = value;
+                                    }
+                                }
                             });
 
-                            if(${(tables?index != 0)?string} && !${initVariable}) {
-                                data.id = ' ';
-                            }
+                            <#--
+                            <#if tables?index != 0>
+                                if(!${initVariable}) {
+                                    <#if table.foreignKey?? >
+                                        data.${table.foreignKey} = ' ';
+                                    </#if>
+                                }
+                            </#if>
+                            -->
                         },
                         dataSrc: function(response) {
                             response.recordsTotal = response.recordsFiltered = response.total;
@@ -257,7 +281,9 @@
                 let childDataTable = $(table).DataTable();
                 let foreignKey = $(table).attr('data-hcrud-foreignKey');
 
-                $(table).parents('.hcrud-wrapper').find('input[name="' + foreignKey + '"]').val(parentRowId);
+                let $wrapper = $(table).parents('.hcrud-wrapper');
+                $wrapper.find('input[name="' + foreignKey + '"]').val(parentRowId);
+                $wrapper.find('input#foreignKey').val(parentRowId);
 
                 childDataTable.ajax.reload();
 
