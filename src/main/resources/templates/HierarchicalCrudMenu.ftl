@@ -16,16 +16,23 @@
 <#-- typewatch -->
 <script type="text/javascript" src="${request.contextPath}/plugin/${className}/node_modules/jquery.typewatch/jquery.typewatch.js"></script>
 
+<style>
+.inlineaction-edit {
+    width: 10px
+}
+</style>
+
 <#assign fooValue = 'uhyfusaydbfusdfsa' >
 
 <#list levels as tables>
-    <div id="hcrud-tabs-${tables?index}" class="hcrud-tabs">
+    <div id="hcrud-tabs-${tables?index}" class="hcrud-tabs" data-hcrud-level="${tables?index}">
         <ul>
             <#list tables as table>
                 <#assign elementId=table.id>
                 <#assign dataListId=table.dataListId>
                 <#assign dataListLabel=table.label>
-                <li><a href="#${elementId}_wrapper">${dataListLabel}</a></li>
+
+                <li id="${elementId}_tab" class="hcrud-tab" data-hcrud-id="${elementId}" data-hcrud-level="${tables?index}" data-hcrud-parent="${table.parent!}"><a href="#${elementId}_tabcontent">${dataListLabel}</a></li>
             </#list>
         </ul>
 
@@ -34,7 +41,7 @@
             <#assign dataListId=table.dataListId>
             <#assign dataListLabel=table.label>
 
-            <div id="${elementId}_wrapper" class="hcrud-wrapper">
+            <div id="${elementId}_tabcontent" class="hcrud-tabcontent" data-hcrud-id="${elementId}" data-hcrud-level="${tables?index}" data-hcrud-parent="${table.parent!}">
                 <#-- <input type="hidden" disabled="disabled" id="formUrl" value="${table.formUrl}" /> -->
                 <input type="hidden" disabled="disabled" id="formUrl" value="${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=Submit" />
                 <input type="hidden" disabled="disabled" id="formJson" value="${table.jsonForm}" />
@@ -44,9 +51,9 @@
 
                 <#if table.foreignKey?? >
                     <input type='hidden' disabled id='foreignKey' name='foreignKey' value='${fooValue}'>
-                    <input type='hidden' disabled id='${table.foreignKey}' name='${table.foreignKey}' value='${fooValue}'>
                 </#if>
-                <table id="${elementId}" class="display" style="width:100%" data-hcrud-parent="${table.parent!}" data-hcrud-foreignKey="${table.foreignKey!}" data-hcrud-children="${table.children?map(child -> child.id)?join(' ')}">
+
+                <table id="${elementId}" class="display" style="width:100%" data-hcrud-id="${elementId}" data-hcrud-level="${tables?index}" data-hcrud-parent="${table.parent!}" data-hcrud-foreignKey="${table.foreignKey!}" data-hcrud-children="${table.children?map(child -> child.id)?join(' ')}">
                     <thead>
                         <tr>
                             <th>_id</th>
@@ -65,17 +72,6 @@
                         </tr>
                     </thead>
                     <tbody></tbody>
-
-                    <#--
-                    <tfoot>
-                        <th>_id</th>
-                        <tr>
-                            <#list table.columns as column>
-                                <th>${column.label!}</th>
-                            </#list>
-                        </tr>
-                    </tfoot>
-                    -->
                 </table>
             </div>
         </#list>
@@ -114,12 +110,11 @@
                     }, {
                         text: '<i class="fa fa-file"/>',
                         action: function ( e, dt, node, config ) {
-                            debugger;
                             let $table = $(dt.table().node());
-                            let $wrapper = $table.parents('.hcrud-wrapper');
-                            let formUrl = $wrapper.find('input#formUrl').val();
-                            let jsonForm = JSON.parse($wrapper.find('input#formJson').val());
-                            let nonce = $wrapper.find('input#nonce').val();
+                            let $tabcontent = $table.parents('.hcrud-tabcontent');
+                            let formUrl = $tabcontent.find('input#formUrl').val();
+                            let jsonForm = JSON.parse($tabcontent.find('input#formJson').val());
+                            let nonce = $tabcontent.find('input#nonce').val();
                             let callback = 'onFormSubmitted';
                             let elementId = dt.table().node().id;
                             let jsonSetting = { elementId : elementId };
@@ -127,14 +122,14 @@
 
                             <#if table.parent ??>
                                 let foreignKeyField = $table.attr('data-hcrud-foreignKey');
-                                let foreignKeyValue = $wrapper.find('input[name="' + foreignKeyField + '"]').val();
+                                let foreignKeyValue = $tabcontent.find('input#foreignKey').val();
                                 let jsonFk = { field : foreignKeyField, value : foreignKeyValue};
                             <#else>
                                 let jsonFk = {};
                             </#if>
 
-                            let height = $wrapper.find('input#height').val();
-                            let width = $wrapper.find('input#width').val();
+                            let height = $tabcontent.find('input#height').val();
+                            let width = $tabcontent.find('input#width').val();
 
                             popupForm(elementId, formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, jsonFk, height, width);
                         }
@@ -142,19 +137,14 @@
                     ajax: {
                         url: '${request.contextPath}/web/json/data/app/${appId!}/${appVersion}/datalist/${dataListId!}',
                         data: function(data, setting) {
-                            debugger;
-
                             data.rows = $('div#${elementId}_length select').val();
                             data.page = $('div#${elementId}_paginate a.current').attr('data-dt-idx');
                             let cell = $('#${elementId} .filters th');
                             let input = $(cell).find('input');
 
                             <#if table.foreignKey?? >
-                                let $foreignKeyFilter = $('#${elementId}_wrapper input#foreignKey');
-
-                                $foreignKeyFilter.each(function(i, e) {
-                                    data.${table.foreignKey} = $(e).val();
-                                });
+                                let $foreignKeyFilter = $('#${elementId}_tabcontent input#foreignKey');
+                                data.${table.foreignKey} = $foreignKeyFilter.val();
                             </#if>
 
                             $(cell).each(function() {
@@ -169,16 +159,6 @@
                                     }
                                 }
                             });
-
-                            <#--
-                            <#if tables?index != 0>
-                                if(!${initVariable}) {
-                                    <#if table.foreignKey?? >
-                                        data.${table.foreignKey} = ' ';
-                                    </#if>
-                                }
-                            </#if>
-                            -->
                         },
                         dataSrc: function(response) {
                             response.recordsTotal = response.recordsFiltered = response.total;
@@ -191,7 +171,7 @@
                         <#if table.editable!false >
                             {
                                 data: null,
-                                className: 'dt-center inlineaction-edit',
+                                className: 'inlineaction-edit',
                                 defaultContent: '<i class="fa fa-pencil"/>',
                                 orderable: false
                             },
@@ -244,16 +224,16 @@
                 $('#${elementId}').on('click', 'td.inlineaction-edit', function (e) {
                     e.preventDefault();
 
-                    let formUrl = $('#${elementId}_wrapper input#formUrl').val();
-                    let jsonForm = JSON.parse($('#${elementId}_wrapper input#formJson').val());
-                    let nonce = $('#${elementId}_wrapper input#nonce').val();
+                    let formUrl = $('#${elementId}_tabcontent input#formUrl').val();
+                    let jsonForm = JSON.parse($('#${elementId}_tabcontent input#formJson').val());
+                    let nonce = $('#${elementId}_tabcontent input#nonce').val();
                     let callback = 'onFormSubmitted';
                     let jsonSetting = { 'elementId' : '${elementId}' };
                     let primaryKey = ${dataTableVariable}.row(this).data()._id;
                     let jsonData = { id : primaryKey };
                     let jsonFk = { };
-                    let height = $('#${elementId}_wrapper input#height').val();
-                    let width = $('#${elementId}_wrapper input#width').val();
+                    let height = $('#${elementId}_tabcontent input#height').val();
+                    let width = $('#${elementId}_tabcontent input#width').val();
 
                     popupForm('${elementId}', formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, jsonFk, height, width)
                 });
@@ -261,6 +241,7 @@
                 $('#${elementId} tbody').on('click', 'tr', function () {
                     if ($(this).hasClass('selected')) {
                         $(this).removeClass('selected');
+                        loadChildDataTableRows(${dataTableVariable},  '${fooValue}');
                     } else {
                         ${dataTableVariable}.$('tr.selected').removeClass('selected');
                         $(this).addClass('selected');
@@ -274,55 +255,98 @@
 
         </#list>
 
-        function loadChildDataTableRows(parentDataTable, parentRowId) {
-            let parentId = parentDataTable.table().node().id;
 
-            $('table[data-hcrud-parent="' + parentId + '"]').each(function(i, table) {
-                let childDataTable = $(table).DataTable();
-                let foreignKey = $(table).attr('data-hcrud-foreignKey');
+        $('li.hcrud-tab').on('click', function(event) {
+            let $tab = $(this);
+            showChildren($tab, false);
+        });
 
-                let $wrapper = $(table).parents('.hcrud-wrapper');
-                $wrapper.find('input[name="' + foreignKey + '"]').val(parentRowId);
-                $wrapper.find('input#foreignKey').val(parentRowId);
-
-                childDataTable.ajax.reload();
-
-                loadChildDataTableRows(childDataTable, ' ');
-            });
-        }
-
-        function popupForm(elementId, formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, jsonFk, height, width) {
-            if (jsonData.id) {
-                if (formUrl.indexOf("?") != -1) {
-                    formUrl += "&";
-                } else {
-                    formUrl += "?";
-                }
-                formUrl += "id=" + jsonData.id;
-            }
-            formUrl += UI.userviewThemeParams();
-
-            var params = {
-                _json : JSON.stringify(jsonForm),
-                _callback : callback,
-                _setting : JSON.stringify(jsonSetting).replace(/"/g, "'"),
-                jsonrow : JSON.stringify(jsonData),
-                _nonce : nonce,
-                _foreignkey : JSON.stringify(jsonFk)
-            };
-
-            var frameId = getFrameId();
-            debugger;
-            JPopup.show(frameId, formUrl, params, "", width, height);
-        }
+        let $tab = $('.hcrud-tabs li').filter(':eq(0)');
+        showChildren($tab, false);
     });
 
+    function showChildren($parentTab, collapse) {
+        debugger;
+        let parentId = $parentTab.data('hcrud-id');
+        let level = parseInt($parentTab.data('hcrud-level'));
+
+        let $childTabs = $('.hcrud-tabs').filter(function() {
+            return $(this).data('hcrud-level') > level;
+        });
+
+        let $childrenTab = $childTabs.find('.hcrud-tab:data[data-hcrud-parent="' + parentId + '"]');
+
+        // if parent has any child, show tabs
+        if($childrenTab.length) {
+            $childTabs.show();
+            $childrenTab.show();
+            $childTabs.tabs({active : false});
+        } else {
+            $childTabs.hide();
+        }
+
+        // let $childrenTabcontent = $childTabs.find('.hcrud-tabcontent:data[data-hcrud-parent="' + parentId + '"]');
+        // $childrenTabcontent.tabs({active: true});
+
+        let $nephewsTab = $childTabs.find('.hcrud-tab:data[data-hcrud-parent!="' + parentId + '"]');
+        $nephewsTab.hide();
+
+        // let $nephewsTabcontent= $childTabs.find('.hcrud-tabcontent:data[data-hcrud-parent!="' + parentId + '"]');
+        // $nephewsTabcontent.tabs({active: false});
+
+        let $grandchildTabs = $('.hcrud-tabs').filter(function() {
+            return $(this).data('hcrud-level') > (level + 1);
+        });
+        $grandchildTabs.hide();
+
+        // let $firstChild = $children.filter('li').filter(':eq(0)');
+        // $firstChild.each((i, e) => showChildren($(e, false)));
+    }
+
+    function loadChildDataTableRows(parentDataTable, parentRowId) {
+        let parentId = parentDataTable.table().node().id;
+
+        $('table[data-hcrud-parent="' + parentId + '"]').each(function(i, table) {
+            let childDataTable = $(table).DataTable();
+            let foreignKey = $(table).attr('data-hcrud-foreignKey');
+
+            let $tabcontent = $(table).parents('.hcrud-tabcontent');
+            $tabcontent.find('input#foreignKey').val(parentRowId);
+
+            childDataTable.ajax.reload();
+
+            loadChildDataTableRows(childDataTable, '${fooValue}');
+        });
+    }
+
+    function popupForm(elementId, formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, jsonFk, height, width) {
+        if (jsonData.id) {
+            if (formUrl.indexOf("?") != -1) {
+                formUrl += "&";
+            } else {
+                formUrl += "?";
+            }
+            formUrl += "id=" + jsonData.id;
+        }
+        formUrl += UI.userviewThemeParams();
+
+        var params = {
+            _json : JSON.stringify(jsonForm),
+            _callback : callback,
+            _setting : JSON.stringify(jsonSetting).replace(/"/g, "'"),
+            _jsonrow : JSON.stringify(jsonData),
+            _nonce : nonce,
+            _foreignkey : JSON.stringify(jsonFk)
+        };
+
+        var frameId = getFrameId();
+        JPopup.show(frameId, formUrl, params, "", width, height);
+    }
     function getFrameId() {
         return 'hcrudFrame';
     }
 
     function onFormSubmitted(args) {
-        debugger;
         let result = JSON.parse(args.result);
         let elementId = args.elementId;
         let table = $('#' + elementId).DataTable();

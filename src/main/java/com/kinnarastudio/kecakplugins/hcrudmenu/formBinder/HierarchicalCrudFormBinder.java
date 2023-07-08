@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 public class HierarchicalCrudFormBinder extends WorkflowFormBinder
         implements FormLoadElementBinder, FormStoreElementBinder, Declutter {
 
-    public final static String ROW_KEY = "jsonrow";
+    public final static String ROW_KEY = "_jsonrow";
 
     private final static String LABEL = "Hcrud Form Binder";
 
