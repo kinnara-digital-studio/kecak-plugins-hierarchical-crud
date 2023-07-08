@@ -144,8 +144,11 @@
                                 text: '<i class="fa fa-trash"/>',
                                 action: function ( e, dt, node, config ) {
                                     let elementId = dt.table().node().id;
-                                    let primaryKey = dt.row().data()._id;
-                                    deleteFormData('${table.formId}', primaryKey, dt);
+                                    let $table = $(dt.table().node());
+                                    $table.find('tr.selected').each(function(i, e) {
+                                        let primaryKey = dt.row().data()._id;
+                                        deleteFormData('${table.formId}', primaryKey, dt);
+                                    });
                                 }
                             }
                         </#if>
