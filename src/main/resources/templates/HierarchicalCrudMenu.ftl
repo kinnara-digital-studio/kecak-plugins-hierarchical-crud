@@ -17,9 +17,9 @@
 <script type="text/javascript" src="${request.contextPath}/plugin/${className}/node_modules/jquery.typewatch/jquery.typewatch.js"></script>
 
 <style>
-.inlineaction-edit {
-    width: 10px
-}
+    .inlineaction {
+        width: 16px
+    }
 </style>
 
 <#assign fooValue = 'uhyfusaydbfusdfsa' >
@@ -42,7 +42,6 @@
             <#assign dataListLabel=table.label>
 
             <div id="${elementId}_tabcontent" class="hcrud-tabcontent" data-hcrud-id="${elementId}" data-hcrud-level="${tables?index}" data-hcrud-parent="${table.parent!}">
-                <#-- <input type="hidden" disabled="disabled" id="formUrl" value="${table.formUrl}" /> -->
                 <input type="hidden" disabled="disabled" id="formUrl" value="${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=Submit" />
                 <input type="hidden" disabled="disabled" id="formJson" value="${table.jsonForm}" />
                 <input type="hidden" disabled="disabled" id="nonce" value="${table.nonce}" />
@@ -102,38 +101,55 @@
                     serverSide: true,
                     searching: false,
                     dom: 'B<"clear">lfrtip',
-                    buttons: [{
-                        text: '<i class="fa fa-refresh"/>',
-                        action: function ( e, dt, node, config ) {
-                            dt.ajax.reload();
+                    buttons: [
+                        {
+                            text: '<i class="fa fa-refresh"/>',
+                            action: function ( e, dt, node, config ) {
+                                dt.ajax.reload();
+                            }
                         }
-                    }, {
-                        text: '<i class="fa fa-file"/>',
-                        action: function ( e, dt, node, config ) {
-                            let $table = $(dt.table().node());
-                            let $tabcontent = $table.parents('.hcrud-tabcontent');
-                            let formUrl = $tabcontent.find('input#formUrl').val();
-                            let jsonForm = JSON.parse($tabcontent.find('input#formJson').val());
-                            let nonce = $tabcontent.find('input#nonce').val();
-                            let callback = 'onFormSubmitted';
-                            let elementId = dt.table().node().id;
-                            let jsonSetting = { elementId : elementId };
-                            let jsonData = { };
 
-                            <#if table.parent ??>
-                                let foreignKeyField = $table.attr('data-hcrud-foreignKey');
-                                let foreignKeyValue = $tabcontent.find('input#foreignKey').val();
-                                let jsonFk = { field : foreignKeyField, value : foreignKeyValue};
-                            <#else>
-                                let jsonFk = {};
-                            </#if>
+                        <#if table.editable!false >
+                            ,{
+                                text: '<i class="fa fa-file"/>',
+                                action: function ( e, dt, node, config ) {
+                                    let $table = $(dt.table().node());
+                                    let $tabcontent = $table.parents('.hcrud-tabcontent');
+                                    let formUrl = $tabcontent.find('input#formUrl').val();
+                                    let jsonForm = JSON.parse($tabcontent.find('input#formJson').val());
+                                    let nonce = $tabcontent.find('input#nonce').val();
+                                    let callback = 'onFormSubmitted';
+                                    let elementId = dt.table().node().id;
+                                    let jsonSetting = { elementId : elementId };
+                                    let jsonData = { };
 
-                            let height = $tabcontent.find('input#height').val();
-                            let width = $tabcontent.find('input#width').val();
+                                    <#if table.parent ??>
+                                        let foreignKeyField = $table.attr('data-hcrud-foreignKey');
+                                        let foreignKeyValue = $tabcontent.find('input#foreignKey').val();
+                                        let jsonFk = { field : foreignKeyField, value : foreignKeyValue};
+                                    <#else>
+                                        let jsonFk = {};
+                                    </#if>
 
-                            popupForm(elementId, formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, jsonFk, height, width);
-                        }
-                    }],
+                                    let height = $tabcontent.find('input#height').val();
+                                    let width = $tabcontent.find('input#width').val();
+
+                                    popupForm(elementId, formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, jsonFk, height, width);
+                                }
+                            }
+                        </#if>
+
+                        <#if table.deletable!false >
+                            ,{
+                                text: '<i class="fa fa-trash"/>',
+                                action: function ( e, dt, node, config ) {
+                                    let elementId = dt.table().node().id;
+                                    let primaryKey = dt.row().data()._id;
+                                    deleteFormData('${table.formId}', primaryKey, dt);
+                                }
+                            }
+                        </#if>
+                    ],
                     ajax: {
                         url: '${request.contextPath}/web/json/data/app/${appId!}/${appVersion}/datalist/${dataListId!}',
                         data: function(data, setting) {
@@ -171,8 +187,9 @@
                         <#if table.editable!false >
                             {
                                 data: null,
-                                className: 'inlineaction-edit',
+                                className: 'dt-center inlineaction inlineaction-edit',
                                 defaultContent: '<i class="fa fa-pencil"/>',
+                                width : '15',
                                 orderable: false
                             },
                         </#if>
@@ -180,7 +197,7 @@
                         <#if table.deletable!false >
                             {
                                 data: null,
-                                className: 'dt-center inlineaction-edit',
+                                className: 'dt-center inlineaction inlineaction-delete',
                                 defaultContent: '<i class="fa fa-trash"/>',
                                 orderable: false
                             },
@@ -236,6 +253,15 @@
                     let width = $('#${elementId}_tabcontent input#width').val();
 
                     popupForm('${elementId}', formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, jsonFk, height, width)
+                });
+
+                $('#${elementId}').on('click', 'td.inlineaction-delete', function (e) {
+                    e.preventDefault();
+
+                    let dt = ${dataTableVariable};
+                    let elementId = dt.table().node().id;
+                    let primaryKey = dt.row().data()._id;
+                    deleteFormData('${table.formId}', primaryKey, dt);
                 });
 
                 $('#${elementId} tbody').on('click', 'tr', function () {
@@ -349,9 +375,22 @@
     function onFormSubmitted(args) {
         let result = JSON.parse(args.result);
         let elementId = args.elementId;
-        let table = $('#' + elementId).DataTable();
-        table.ajax.reload();
+        let dt = $('#' + elementId).DataTable();
+        dt.ajax.reload();
         let frameId = getFrameId();
         JPopup.hide(frameId);
+    }
+
+    function deleteFormData(formDefId, primaryKey, dt) {
+        if(confirm( "Are you sure you want to delete the selected rows?" )) {
+            $.ajax({
+                url: '${request.contextPath}/web/json/data/app/${appId!}/${appVersion}/form/' + formDefId + '/' + primaryKey,
+                type: 'DELETE',
+                success: function(result) {
+                    // Do something with the result
+                    dt.ajax.reload();
+                }
+            });
+        }
     }
 </script>

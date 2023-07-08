@@ -43,10 +43,9 @@ public class MapUtils {
 
         map.put("editable", true);
 
-        map.put("deletable", false);
+        map.put("deletable", true);
 
 //        map.put("formUrl", "${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=${buttonLabel!?html}");
-
 
         final String jsonForm = form == null ? "{}" : formService.generateElementJson(form);
         map.put("jsonForm", StringEscapeUtils.escapeHtml4(jsonForm));
