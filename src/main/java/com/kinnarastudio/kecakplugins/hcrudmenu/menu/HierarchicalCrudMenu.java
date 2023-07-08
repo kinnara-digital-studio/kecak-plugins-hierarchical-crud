@@ -114,12 +114,13 @@ public class HierarchicalCrudMenu extends UserviewMenu {
         final String formId = properties.getOrDefault("formId", "");
         final String foreignKeyFilter = properties.getOrDefault("foreignKeyFilter", "");
         final String parentDataListId = properties.getOrDefault("parentDataListId", "");
+        final boolean isReadonly = "true".equalsIgnoreCase(properties.get("readonly"));
 
-        return getTable(dataListId, foreignKeyFilter, formId, parentDataListId, memo);
+        return getTable(dataListId, foreignKeyFilter, formId, parentDataListId, isReadonly, memo);
     }
 
     @Nullable
-    protected Table getTable(String dataListId, String foreignKeyFilter, String formDefId, String parentDataListId, final Map<String, Table> memo) {
+    protected Table getTable(String dataListId, String foreignKeyFilter, String formDefId, String parentDataListId, boolean isReadonly, final Map<String, Table> memo) {
         return Optional.of(dataListId)
                 .map(memo::get)
                 .orElseGet(() -> {
@@ -137,7 +138,7 @@ public class HierarchicalCrudMenu extends UserviewMenu {
                             .filter(parent -> !isCyclical(dataList.getId(), parent))
                             .orElse(null);
 
-                    final Table childTable = new Table(dataList, foreignKeyFilter, optForm.orElse(null), parentTable);
+                    final Table childTable = new Table(dataList, foreignKeyFilter, optForm.orElse(null), parentTable, isReadonly);
 
                     if(parentTable != null) {
                         parentTable.addChild(childTable);

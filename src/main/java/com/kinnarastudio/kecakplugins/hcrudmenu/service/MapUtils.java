@@ -12,6 +12,7 @@ import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.DataList;
 import org.joget.apps.form.model.Form;
 import org.joget.apps.form.service.FormService;
+import org.joget.apps.form.service.FormUtil;
 import org.joget.commons.util.SecurityUtil;
 import org.springframework.context.ApplicationContext;
 
@@ -30,6 +31,9 @@ public class MapUtils {
         final DataList dataList = table.getDataList();
 
         final Form form = table.getForm();
+        if(form != null && table.isReadonly()) {
+            FormUtil.setReadOnlyProperty(form);
+        }
 
         map.put("id", dataList.getId());
 
@@ -41,13 +45,15 @@ public class MapUtils {
 
         map.put("formId", Optional.ofNullable(form).map(f -> f.getPropertyString("id")).orElse(""));
 
-        map.put("editable", true);
+        map.put("editable", !table.isReadonly());
 
-        map.put("deletable", true);
+        map.put("deletable", !table.isReadonly());
 
 //        map.put("formUrl", "${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=${buttonLabel!?html}");
 
         final String jsonForm = form == null ? "{}" : formService.generateElementJson(form);
+
+
         map.put("jsonForm", StringEscapeUtils.escapeHtml4(jsonForm));
 
         final String nonce = SecurityUtil.generateNonce(

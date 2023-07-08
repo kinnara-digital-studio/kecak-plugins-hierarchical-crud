@@ -17,10 +17,15 @@
 <script type="text/javascript" src="${request.contextPath}/plugin/${className}/node_modules/jquery.typewatch/jquery.typewatch.js"></script>
 
 <style>
-    .inlineaction {
-        width: 16px
+    .dataTables_length label {
+        width: 180px
+    }
+
+    .dataTables_length label select {
+        width: 60px
     }
 </style>
+
 
 <#assign fooValue = 'uhyfusaydbfusdfsa' >
 
@@ -56,10 +61,7 @@
                     <thead>
                         <tr>
                             <th>_id</th>
-
-                            <#if table.editable!false >
-                                <th></th>
-                            </#if>
+                            <th></th>
 
                             <#if table.deletable!false >
                                 <th></th>
@@ -100,7 +102,8 @@
                     processing: true,
                     serverSide: true,
                     searching: false,
-                    dom: 'B<"clear">lfrtip',
+                    autoWidth: false,
+                    dom: 'l<"clear">Bfrtip',
                     buttons: [
                         {
                             text: '<i class="fa fa-refresh"/>',
@@ -109,7 +112,7 @@
                             }
                         }
 
-                        <#if table.editable!false >
+                        <#if table.deletable!false >
                             ,{
                                 text: '<i class="fa fa-file"/>',
                                 action: function ( e, dt, node, config ) {
@@ -139,6 +142,7 @@
                             }
                         </#if>
 
+                        <#--
                         <#if table.deletable!false >
                             ,{
                                 text: '<i class="fa fa-trash"/>',
@@ -152,6 +156,7 @@
                                 }
                             }
                         </#if>
+                        -->
                     ],
                     ajax: {
                         url: '${request.contextPath}/web/json/data/app/${appId!}/${appVersion}/datalist/${dataListId!}',
@@ -186,22 +191,24 @@
                     },
                     columns: [
                         { data : '_id', visible: false, searchable: false },
-
-                        <#if table.editable!false >
                             {
                                 data: null,
                                 className: 'dt-center inlineaction inlineaction-edit',
-                                defaultContent: '<i class="fa fa-pencil"/>',
-                                width : '15',
+                                <#if table.editable!false >
+                                    defaultContent: '<i class="fa fa-pencil"/>',
+                                <#else>
+                                    defaultContent: '<i class="fa fa-eye"/>',
+                                </#if>
+                                width : '12',
                                 orderable: false
                             },
-                        </#if>
 
                         <#if table.deletable!false >
                             {
                                 data: null,
                                 className: 'dt-center inlineaction inlineaction-delete',
                                 defaultContent: '<i class="fa fa-trash"/>',
+                                width : '12',
                                 orderable: false
                             },
                         </#if>

@@ -44,6 +44,20 @@
                     {
                         "key": "parentDataListId",
                         "label": "Parent"
+                    },
+                    {
+                        "key": "readonly",
+                        "label": "Readonly",
+                        "options": [
+                            {
+                                "value": "true",
+                                "label": "Yes"
+                            },
+                            {
+                                "value": "false",
+                                "label": "No"
+                            }
+                        ]
                     }
                 ]
             }

@@ -16,15 +16,18 @@ public class Table {
 
     private final String foreignKeyFilter;
 
+    private final boolean readonly;
+
     @Nullable
     private final Table parent;
 
-    public Table(DataList dataList, String foreignKeyFilter, Form form, Table parent) {
+    public Table(DataList dataList, String foreignKeyFilter, Form form, Table parent, boolean readonly) {
         this.dataList = dataList;
         this.foreignKeyFilter = foreignKeyFilter;
         this.form = form;
         this.parent = parent;
         this.children = new ArrayList<>();
+        this.readonly = readonly;
     }
 
     public DataList getDataList() {
@@ -59,5 +62,9 @@ public class Table {
 
     public String getForeignKeyFilter() {
         return foreignKeyFilter;
+    }
+
+    public boolean isReadonly() {
+        return readonly;
     }
 }
