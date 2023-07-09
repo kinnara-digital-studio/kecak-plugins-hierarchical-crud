@@ -161,8 +161,20 @@
                     ajax: {
                         url: '${request.contextPath}/web/json/data/app/${appId!}/${appVersion}/datalist/${dataListId!}',
                         data: function(data, setting) {
+                            debugger;
                             data.rows = $('div#${elementId}_length select').val();
                             data.page = $('div#${elementId}_paginate a.current').attr('data-dt-idx');
+
+                            if(data.order.length) {
+                                let order = data.order[0];
+                                let columnIdx = order.column;
+                                if(columnIdx > 1) {
+                                    let column = data.columns[columnIdx].data;
+                                    data.sort = column;
+                                    data.desc = order.dir == 'desc';
+                                }
+                            }
+
                             let cell = $('#${elementId} .filters th');
                             let input = $(cell).find('input');
 
