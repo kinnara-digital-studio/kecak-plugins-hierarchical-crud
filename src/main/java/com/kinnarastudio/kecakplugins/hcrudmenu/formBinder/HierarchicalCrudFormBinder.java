@@ -57,6 +57,16 @@ public class HierarchicalCrudFormBinder extends WorkflowFormBinder
             }
         }));
 
+        Optional.of("_setting")
+                .map(formData::getRequestParameter)
+                .map(Try.onFunction(JSONObject::new))
+                .ifPresent(Try.onConsumer(json -> {
+                    final String field = json.getString("fkfield");
+                    final String value = json.getString("fkvalue");
+
+                    submittedRows.forEach(r -> r.setProperty(field, value));
+                }));
+
         return super.store(form, submittedRows, formData);
     }
 
@@ -85,16 +95,6 @@ public class HierarchicalCrudFormBinder extends WorkflowFormBinder
 
                     return rowSet;
                 });
-
-        Optional.of("_foreignkey")
-                .map(formData::getRequestParameter)
-                .map(Try.onFunction(JSONObject::new))
-                .ifPresent(Try.onConsumer(json -> {
-                    final String field = json.getString("field");
-                    final String value = json.getString("value");
-
-                    load.stream().findFirst().ifPresent(r -> r.setProperty(field, value));
-                }));
 
         return load;
     }

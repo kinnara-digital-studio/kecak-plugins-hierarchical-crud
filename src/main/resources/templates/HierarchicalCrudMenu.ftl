@@ -130,6 +130,9 @@
                                         let foreignKeyField = $table.attr('data-hcrud-foreignKey');
                                         let foreignKeyValue = $tabcontent.find('input#foreignKey').val();
                                         let jsonFk = { field : foreignKeyField, value : foreignKeyValue};
+
+                                        jsonSetting['fkfield'] = foreignKeyField;
+                                        jsonSetting['fkvalue'] = foreignKeyValue;
                                     <#else>
                                         let jsonFk = {};
                                     </#if>
