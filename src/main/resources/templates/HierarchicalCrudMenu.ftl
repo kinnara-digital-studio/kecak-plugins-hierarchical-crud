@@ -24,10 +24,14 @@
     .dataTables_length label select {
         width: 60px
     }
+
+    .hcrud-btn-hide {
+        display: none
+    }
 </style>
 
 
-<#assign fooValue = 'uhyfusaydbfusdfsa' >
+<#assign fooValue = "${random!'putSomeRandomValue'}" >
 
 <#list levels as tables>
     <div id="hcrud-tabs-${tables?index}" class="hcrud-tabs" data-hcrud-level="${tables?index}">
@@ -106,7 +110,8 @@
                     dom: 'l<"clear">Bfrtip',
                     buttons: [
                         {
-                            text: '<i class="fa fa-refresh"/>',
+                            text: '<i class="fa fa-refresh "/>',
+                            attr : { disabled: ${(tables?index != 0)?string} },
                             action: function ( e, dt, node, config ) {
                                 dt.ajax.reload();
                             }
@@ -115,6 +120,7 @@
                         <#if table.deletable!false >
                             ,{
                                 text: '<i class="fa fa-file"/>',
+                                attr : { disabled: ${(tables?index != 0)?string} },
                                 action: function ( e, dt, node, config ) {
                                     let $table = $(dt.table().node());
                                     let $tabcontent = $table.parents('.hcrud-tabcontent');
@@ -133,6 +139,11 @@
 
                                         jsonSetting['fkfield'] = foreignKeyField;
                                         jsonSetting['fkvalue'] = foreignKeyValue;
+
+                                        if(foreignKeyValue == '${fooValue}') {
+                                            alert('Please choose parent data');
+                                            return;
+                                        }
                                     <#else>
                                         let jsonFk = {};
                                     </#if>
@@ -163,8 +174,8 @@
                     ],
                     ajax: {
                         url: '${request.contextPath}/web/json/data/app/${appId!}/${appVersion}/datalist/${dataListId!}',
+                        error: (err) => { debugger; },
                         data: function(data, setting) {
-                            debugger;
                             data.rows = $('div#${elementId}_length select').val();
                             data.page = $('div#${elementId}_paginate a.current').attr('data-dt-idx');
 
@@ -317,7 +328,6 @@
     });
 
     function showChildren($parentTab, collapse) {
-        debugger;
         let parentId = $parentTab.data('hcrud-id');
         let level = parseInt($parentTab.data('hcrud-level'));
 
@@ -358,11 +368,17 @@
         let parentId = parentDataTable.table().node().id;
 
         $('table[data-hcrud-parent="' + parentId + '"]').each(function(i, table) {
-            let childDataTable = $(table).DataTable();
-            let foreignKey = $(table).attr('data-hcrud-foreignKey');
+            let $childTable = $(table);
+            let $tabcontent = $childTable.parents('.hcrud-tabcontent');
 
-            let $tabcontent = $(table).parents('.hcrud-tabcontent');
-            $tabcontent.find('input#foreignKey').val(parentRowId);
+            let disable = parentRowId == '${fooValue}';
+            $tabcontent.find('.dt-buttons button').attr('disabled', disable);
+
+            let childDataTable = $childTable.DataTable();
+            let foreignKey = $childTable.attr('data-hcrud-foreignKey');
+
+            let $inputForeignKey = $tabcontent.find('input#foreignKey');
+            $inputForeignKey.val(parentRowId);
 
             childDataTable.ajax.reload();
 
