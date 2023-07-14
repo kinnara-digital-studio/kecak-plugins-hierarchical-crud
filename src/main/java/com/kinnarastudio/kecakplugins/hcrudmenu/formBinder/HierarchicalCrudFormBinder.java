@@ -26,7 +26,8 @@ import java.util.stream.Stream;
 public class HierarchicalCrudFormBinder extends WorkflowFormBinder
         implements FormLoadElementBinder, FormStoreElementBinder, Declutter {
 
-    public final static String ROW_KEY = "_jsonrow";
+    public final static String KEY_ROW = "_jsonrow";
+    public final static String KEY_SETTING = "_setting";
 
     private final static String LABEL = "Hcrud Form Binder";
 
@@ -57,7 +58,7 @@ public class HierarchicalCrudFormBinder extends WorkflowFormBinder
             }
         }));
 
-        Optional.of("_setting")
+        Optional.of(KEY_SETTING)
                 .map(formData::getRequestParameter)
                 .map(Try.onFunction(JSONObject::new))
                 .ifPresent(Try.onConsumer(json -> {
@@ -74,7 +75,7 @@ public class HierarchicalCrudFormBinder extends WorkflowFormBinder
     public FormRowSet load(Element element, String primaryKey, FormData formData) {
         final HttpServletRequest request = WorkflowUtil.getHttpServletRequest();
 
-        final String key = Optional.of(ROW_KEY)
+        final String key = Optional.of(KEY_ROW)
                 .map(request::getParameter)
                 .filter(this::isNotEmpty)
                 .map(Try.onFunction(JSONObject::new))
