@@ -38,8 +38,12 @@
                         "label": "Foreign Key Filter"
                     },
                     {
-                        "key": "formId",
-                        "label": "Form"
+                        "key": "createFormId",
+                        "label": "Create Form"
+                    },
+                    {
+                        "key": "editFormId",
+                        "label": "Edit Form"
                     },
                     {
                         "key": "parentDataListId",

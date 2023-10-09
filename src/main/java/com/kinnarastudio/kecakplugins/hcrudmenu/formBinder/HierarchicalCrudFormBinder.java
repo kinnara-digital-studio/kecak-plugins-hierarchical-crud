@@ -9,6 +9,7 @@ import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.form.lib.WorkflowFormBinder;
 import org.joget.apps.form.model.*;
 import org.joget.apps.form.service.FormUtil;
+import org.joget.commons.util.LogUtil;
 import org.joget.plugin.base.PluginManager;
 import org.joget.workflow.util.WorkflowUtil;
 import org.json.JSONObject;
@@ -23,6 +24,7 @@ import java.util.stream.Stream;
 /**
  * @author aristo
  */
+@Deprecated
 public class HierarchicalCrudFormBinder extends WorkflowFormBinder
         implements FormLoadElementBinder, FormStoreElementBinder, Declutter {
 
@@ -85,6 +87,7 @@ public class HierarchicalCrudFormBinder extends WorkflowFormBinder
                 .orElse(primaryKey);
 
         final String formDefId = element.getPropertyString(FormUtil.PROPERTY_ID);
+
         final Form form = MapUtils.optForm(formDefId).orElse(null);
         final FormRowSet load = Optional.ofNullable(super.load(form, key, formData))
                 .orElseGet(() -> {

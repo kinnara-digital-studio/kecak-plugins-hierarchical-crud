@@ -4,7 +4,7 @@
     <groupId>com.kinnarastudio.kecakplugins.hcrud</groupId>
     <artifactId>kecak-plugins-hierarchical-crud</artifactId>
     <packaging>bundle</packaging>
-    <version>1.0.0</version>
+    <version>3.0.0</version>
     <name>kecak-plugins-hierarchical-crud</name>
     <url>http://www.kecak.org</url>
     <scm>

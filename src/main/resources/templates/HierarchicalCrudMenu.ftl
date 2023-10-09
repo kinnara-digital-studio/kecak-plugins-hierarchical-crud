@@ -51,8 +51,9 @@
             <#assign dataListLabel=table.label>
 
             <div id="${elementId}_tabcontent" class="hcrud-tabcontent" data-hcrud-id="${elementId}" data-hcrud-level="${tables?index}" data-hcrud-parent="${table.parent!}">
-                <input type="hidden" disabled="disabled" id="formUrl" value="${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=Submit" />
-                <input type="hidden" disabled="disabled" id="formJson" value="${table.jsonForm}" />
+                <input type="hidden" disabled="disabled" id="formUrl" value="${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=${table.submitButtonLabel!'Submit'}" />
+                <input type="hidden" disabled="disabled" id="createFormJson" value="${table.jsonCreateForm}" />
+                <input type="hidden" disabled="disabled" id="editFormJson" value="${table.jsonEditForm}" />
                 <input type="hidden" disabled="disabled" id="nonce" value="${table.nonce}" />
                 <input type="hidden" disabled="disabled" id="height" value="${table.height}" />
                 <input type="hidden" disabled="disabled" id="width" value="${table.width}" />
@@ -117,15 +118,17 @@
                             }
                         }
 
-                        <#if table.deletable!false >
+                        <#if table.createFormId?? && table.deletable!false >
                             ,{
                                 text: '<i class="fa fa-file"/>',
                                 attr : { disabled: ${(tables?index != 0)?string} },
                                 action: function ( e, dt, node, config ) {
+                                    // create new record
+
                                     let $table = $(dt.table().node());
                                     let $tabcontent = $table.parents('.hcrud-tabcontent');
                                     let formUrl = $tabcontent.find('input#formUrl').val();
-                                    let jsonForm = JSON.parse($tabcontent.find('input#formJson').val());
+                                    let jsonForm = JSON.parse($tabcontent.find('input#createFormJson').val());
                                     let nonce = $tabcontent.find('input#nonce').val();
                                     let callback = 'onFormSubmitted';
                                     let elementId = dt.table().node().id;
@@ -155,22 +158,6 @@
                                 }
                             }
                         </#if>
-
-                        <#--
-                        <#if table.deletable!false >
-                            ,{
-                                text: '<i class="fa fa-trash"/>',
-                                action: function ( e, dt, node, config ) {
-                                    let elementId = dt.table().node().id;
-                                    let $table = $(dt.table().node());
-                                    $table.find('tr.selected').each(function(i, e) {
-                                        let primaryKey = dt.row().data()._id;
-                                        deleteFormData('${table.formId}', primaryKey, dt);
-                                    });
-                                }
-                            }
-                        </#if>
-                        -->
                     ],
                     ajax: {
                         url: '${request.contextPath}/web/json/data/app/${appId!}/${appVersion}/datalist/${dataListId!}',
@@ -217,19 +204,18 @@
                     },
                     columns: [
                         { data : '_id', visible: false, searchable: false },
+
+                        <#if table.editFormId?? >
                             {
                                 data: null,
                                 className: 'dt-center inlineaction inlineaction-edit',
-                                <#if table.editable!false >
-                                    defaultContent: '<i class="fa fa-pencil"/>',
-                                <#else>
-                                    defaultContent: '<i class="fa fa-eye"/>',
-                                </#if>
+                                defaultContent: '<i class="fa <#if table.editable!false>fa-pencil<#else>fa-eye</#if>" />',
                                 width : '12',
                                 orderable: false
                             },
+                        </#if>
 
-                        <#if table.deletable!false >
+                        <#if table.createFormId?? && table.deletable!false >
                             {
                                 data: null,
                                 className: 'dt-center inlineaction inlineaction-delete',
@@ -278,7 +264,7 @@
                     e.preventDefault();
 
                     let formUrl = $('#${elementId}_tabcontent input#formUrl').val();
-                    let jsonForm = JSON.parse($('#${elementId}_tabcontent input#formJson').val());
+                    let jsonForm = JSON.parse($('#${elementId}_tabcontent input#editFormJson').val());
                     let nonce = $('#${elementId}_tabcontent input#nonce').val();
                     let callback = 'onFormSubmitted';
                     let jsonSetting = { 'elementId' : '${elementId}' };
@@ -297,7 +283,8 @@
                     let dt = ${dataTableVariable};
                     let elementId = dt.table().node().id;
                     let primaryKey = dt.row().data()._id;
-                    deleteFormData('${table.formId}', primaryKey, dt);
+
+                    deleteFormData('${table.createFormId!''}', primaryKey, dt);
                 });
 
                 $('#${elementId} tbody').on('click', 'tr', function () {
@@ -328,6 +315,8 @@
     });
 
     function showChildren($parentTab, collapse) {
+        debugger;
+
         let parentId = $parentTab.data('hcrud-id');
         let level = parseInt($parentTab.data('hcrud-level'));
 
@@ -365,6 +354,7 @@
     }
 
     function loadChildDataTableRows(parentDataTable, parentRowId) {
+        debugger;
         let parentId = parentDataTable.table().node().id;
 
         $('table[data-hcrud-parent="' + parentId + '"]').each(function(i, table) {
@@ -387,6 +377,7 @@
     }
 
     function popupForm(elementId, formUrl, jsonForm, nonce, callback, jsonSetting, jsonData, jsonFk, height, width) {
+        debugger;
         if (jsonData.id) {
             if (formUrl.indexOf("?") != -1) {
                 formUrl += "&";

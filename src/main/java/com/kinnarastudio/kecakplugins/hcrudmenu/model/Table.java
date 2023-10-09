@@ -12,7 +12,8 @@ public class Table {
     private final DataList dataList;
     private final List<Table> children;
 
-    private final Form form;
+    private final Form createForm;
+    private final Form editForm;
 
     private final String foreignKeyFilter;
 
@@ -21,10 +22,11 @@ public class Table {
     @Nullable
     private final Table parent;
 
-    public Table(DataList dataList, String foreignKeyFilter, Form form, Table parent, boolean readonly) {
+    public Table(DataList dataList, String foreignKeyFilter, Form createForm, Form editForm, Table parent, boolean readonly) {
         this.dataList = dataList;
         this.foreignKeyFilter = foreignKeyFilter;
-        this.form = form;
+        this.createForm = createForm;
+        this.editForm = editForm;
         this.parent = parent;
         this.children = new ArrayList<>();
         this.readonly = readonly;
@@ -47,10 +49,6 @@ public class Table {
         children.add(child);
     }
 
-    public Form getForm() {
-        return form;
-    }
-
     public int getDepth() {
         return parent == null ? 0 : (parent.getDepth() + 1);
     }
@@ -66,5 +64,13 @@ public class Table {
 
     public boolean isReadonly() {
         return readonly;
+    }
+
+    public Form getCreateForm() {
+        return createForm;
+    }
+
+    public Form getEditForm() {
+        return editForm;
     }
 }

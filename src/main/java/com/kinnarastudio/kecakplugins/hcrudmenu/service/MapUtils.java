@@ -1,7 +1,6 @@
 package com.kinnarastudio.kecakplugins.hcrudmenu.service;
 
 import com.kinnarastudio.commons.Try;
-import com.kinnarastudio.kecakplugins.hcrudmenu.formBinder.HierarchicalCrudFormBinder;
 import com.kinnarastudio.kecakplugins.hcrudmenu.model.Table;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.joget.apps.app.dao.FormDefinitionDao;
@@ -30,10 +29,10 @@ public class MapUtils {
 
         final DataList dataList = table.getDataList();
 
-        final Form form = table.getForm();
-        if(form != null && table.isReadonly()) {
-            FormUtil.setReadOnlyProperty(form);
-        }
+        final Optional<Form> optCreateForm = Optional.ofNullable(table.getCreateForm());
+
+        final Optional<Form> optEditForm = Optional.ofNullable(table.getEditForm());
+        optEditForm.ifPresent(form -> FormUtil.setReadOnlyProperty(form, table.isReadonly(), null));
 
         map.put("id", dataList.getId());
 
@@ -43,27 +42,30 @@ public class MapUtils {
 
         map.put("dataListId", dataList.getId());
 
-        map.put("formId", Optional.ofNullable(form).map(f -> f.getPropertyString("id")).orElse(""));
+        optCreateForm.map(f -> f.getPropertyString("id")).ifPresent(s -> map.put("createFormId", s));
 
-        map.put("editable", !table.isReadonly());
+        optEditForm.map(f -> f.getPropertyString("id")).ifPresent(s -> map.put("editFormId", s));
 
-        map.put("deletable", !table.isReadonly());
+        map.put("editable", optEditForm.isPresent() && !table.isReadonly());
 
-//        map.put("formUrl", "${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=${buttonLabel!?html}");
+        map.put("deletable", optEditForm.isPresent() && !table.isReadonly());
 
-        final String jsonForm = form == null ? "{}" : formService.generateElementJson(form);
+        final String jsonCreateForm = optCreateForm.map(formService::generateElementJson).orElse("{}");
+        map.put("jsonCreateForm", StringEscapeUtils.escapeHtml4(jsonCreateForm));
 
-
-        map.put("jsonForm", StringEscapeUtils.escapeHtml4(jsonForm));
+        final String jsonEditForm = optEditForm.map(formService::generateElementJson).orElse("{}");
+        map.put("jsonEditForm", StringEscapeUtils.escapeHtml4(jsonEditForm));
 
         final String nonce = SecurityUtil.generateNonce(
-                new String[]{"EmbedForm", appDefinition.getAppId(), appDefinition.getVersion().toString(), jsonForm },
+                new String[]{"EmbedForm", appDefinition.getAppId(), appDefinition.getVersion().toString(), jsonEditForm },
                 1);
 
         map.put("nonce", nonce);
 
         map.put("height", 500);
         map.put("width", 900);
+
+        map.put("submitButtonLabel", table.isReadonly() ? "Close" : "Submit");
 
         final List<Map<String, String>> columns = Optional.of(dataList)
                 .map(DataList::getColumns)
@@ -129,10 +131,6 @@ public class MapUtils {
                 .map(s -> formDefinitionDao.loadById(s, appDef))
                 .map(FormDefinition::getJson)
                 .map(formService::createElementFromJson)
-                .map(e -> (Form)e)
-                .map(Try.toPeek(f -> {
-                    f.setLoadBinder(new HierarchicalCrudFormBinder());
-                    f.setStoreBinder(new HierarchicalCrudFormBinder());
-                }));
+                .map(e -> (Form)e);
     }
 }

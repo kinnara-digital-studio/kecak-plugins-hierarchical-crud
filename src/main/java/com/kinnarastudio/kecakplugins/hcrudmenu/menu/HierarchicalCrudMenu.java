@@ -44,6 +44,9 @@ public class HierarchicalCrudMenu extends UserviewMenu {
         dataModel.put("className", getClass().getName());
         dataModel.put("label", label);
 
+//        dataModel.put("random", new Random().ints().findFirst().orElse(0));
+        dataModel.put("random", 0);
+
         final AppDefinition appDefinition = AppUtil.getCurrentAppDefinition();
         if (appDefinition != null) {
             dataModel.put("appId", appDefinition.getAppId());
@@ -106,21 +109,23 @@ public class HierarchicalCrudMenu extends UserviewMenu {
     @Nullable
     protected Table getTable(Map<String, String> properties, final Map<String, Table> memo) {
         final String dataListId = properties.getOrDefault("dataListId", "");
-        final String formId = properties.getOrDefault("formId", "");
+        final String createFormId = properties.getOrDefault("createFormId", "");
+        final String editFormId = properties.getOrDefault("editFormId", "");
         final String foreignKeyFilter = properties.getOrDefault("foreignKeyFilter", "");
         final String parentDataListId = properties.getOrDefault("parentDataListId", "");
         final boolean isReadonly = "true".equalsIgnoreCase(properties.get("readonly"));
 
-        return getTable(dataListId, foreignKeyFilter, formId, parentDataListId, isReadonly, memo);
+        return getTable(dataListId, foreignKeyFilter, createFormId, editFormId, parentDataListId, isReadonly, memo);
     }
 
     @Nullable
-    protected Table getTable(String dataListId, String foreignKeyFilter, String formDefId, String parentDataListId, boolean isReadonly, final Map<String, Table> memo) {
+    protected Table getTable(String dataListId, String foreignKeyFilter, String createFormDefId, String editFormDefId, String parentDataListId, boolean isReadonly, final Map<String, Table> memo) {
         return Optional.of(dataListId)
                 .map(memo::get)
                 .orElseGet(() -> {
                     final Optional<DataList> optDataList = optDataList(dataListId);
-                    final Optional<Form> optForm = MapUtils.optForm(formDefId);
+                    final Optional<Form> optCreateForm = MapUtils.optForm(createFormDefId);
+                    final Optional<Form> optEditForm = MapUtils.optForm(editFormDefId);
 
                     if(!optDataList.isPresent()) {
                         return null;
@@ -133,7 +138,7 @@ public class HierarchicalCrudMenu extends UserviewMenu {
                             .filter(parent -> !isCyclical(dataList.getId(), parent))
                             .orElse(null);
 
-                    final Table childTable = new Table(dataList, foreignKeyFilter, optForm.orElse(null), parentTable, isReadonly);
+                    final Table childTable = new Table(dataList, foreignKeyFilter, optCreateForm.orElse(null), optEditForm.orElse(null), parentTable, isReadonly);
 
                     if(parentTable != null) {
                         parentTable.addChild(childTable);
