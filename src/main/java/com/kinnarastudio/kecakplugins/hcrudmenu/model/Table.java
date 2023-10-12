@@ -17,16 +17,18 @@ public class Table {
 
     private final String foreignKeyFilter;
 
+    private final String editButtonLabel;
     private final boolean readonly;
 
     @Nullable
     private final Table parent;
 
-    public Table(DataList dataList, String foreignKeyFilter, Form createForm, Form editForm, Table parent, boolean readonly) {
+    public Table(DataList dataList, String foreignKeyFilter, Form createForm, Form editForm, String editButtonLabel, Table parent, boolean readonly) {
         this.dataList = dataList;
         this.foreignKeyFilter = foreignKeyFilter;
         this.createForm = createForm;
         this.editForm = editForm;
+        this.editButtonLabel = editButtonLabel;
         this.parent = parent;
         this.children = new ArrayList<>();
         this.readonly = readonly;
@@ -72,5 +74,9 @@ public class Table {
 
     public Form getEditForm() {
         return editForm;
+    }
+
+    public String getEditButtonLabel() {
+        return editButtonLabel;
     }
 }

@@ -46,6 +46,10 @@
                         "label": "Edit Form"
                     },
                     {
+                        "key": "editFormButtonLabel",
+                        "label": "Edit Form Button Label"
+                    },
+                    {
                         "key": "parentDataListId",
                         "label": "Parent"
                     },

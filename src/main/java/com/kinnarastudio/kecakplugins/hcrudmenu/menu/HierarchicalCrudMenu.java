@@ -113,13 +113,14 @@ public class HierarchicalCrudMenu extends UserviewMenu {
         final String editFormId = properties.getOrDefault("editFormId", "");
         final String foreignKeyFilter = properties.getOrDefault("foreignKeyFilter", "");
         final String parentDataListId = properties.getOrDefault("parentDataListId", "");
+        final String editFormButtonLabel = properties.getOrDefault("editFormButtonLabel", "");
         final boolean isReadonly = "true".equalsIgnoreCase(properties.get("readonly"));
 
-        return getTable(dataListId, foreignKeyFilter, createFormId, editFormId, parentDataListId, isReadonly, memo);
+        return getTable(dataListId, foreignKeyFilter, createFormId, editFormId, parentDataListId, editFormButtonLabel, isReadonly, memo);
     }
 
     @Nullable
-    protected Table getTable(String dataListId, String foreignKeyFilter, String createFormDefId, String editFormDefId, String parentDataListId, boolean isReadonly, final Map<String, Table> memo) {
+    protected Table getTable(String dataListId, String foreignKeyFilter, String createFormDefId, String editFormDefId, String parentDataListId, String editFormButtonLabel, boolean isReadonly, final Map<String, Table> memo) {
         return Optional.of(dataListId)
                 .map(memo::get)
                 .orElseGet(() -> {
@@ -127,7 +128,7 @@ public class HierarchicalCrudMenu extends UserviewMenu {
                     final Optional<Form> optCreateForm = MapUtils.optForm(createFormDefId);
                     final Optional<Form> optEditForm = MapUtils.optForm(editFormDefId);
 
-                    if(!optDataList.isPresent()) {
+                    if (!optDataList.isPresent()) {
                         return null;
                     }
 
@@ -138,9 +139,13 @@ public class HierarchicalCrudMenu extends UserviewMenu {
                             .filter(parent -> !isCyclical(dataList.getId(), parent))
                             .orElse(null);
 
-                    final Table childTable = new Table(dataList, foreignKeyFilter, optCreateForm.orElse(null), optEditForm.orElse(null), parentTable, isReadonly);
+                    final String editButtonLabel = Optional.ofNullable(editFormButtonLabel)
+                            .filter(s -> !s.isEmpty())
+                            .orElse(isReadonly ? "Close" : "Submit");
 
-                    if(parentTable != null) {
+                    final Table childTable = new Table(dataList, foreignKeyFilter, optCreateForm.orElse(null), optEditForm.orElse(null), editButtonLabel, parentTable, isReadonly);
+
+                    if (parentTable != null) {
                         parentTable.addChild(childTable);
                     }
 
@@ -151,17 +156,18 @@ public class HierarchicalCrudMenu extends UserviewMenu {
     }
 
     protected boolean isCyclical(String id, Table table) {
-        if(id.equals(table.getDataList().getId())) {
+        if (id.equals(table.getDataList().getId())) {
             return true;
         }
 
         final Table parent = table.getParent();
-        if(parent == null) {
+        if (parent == null) {
             return false;
         } else {
             return isCyclical(id, table.getParent());
         }
     }
+
     protected Optional<Map<String, String>> getRowProperties(String dataListId) {
         return Arrays.stream(getPropertyGrid("tables"))
                 .filter(m -> dataListId.equals(m.get("dataListId")))
@@ -181,7 +187,7 @@ public class HierarchicalCrudMenu extends UserviewMenu {
             }
 
             final int level = table.getDepth();
-            if(!levels.containsKey(level)) {
+            if (!levels.containsKey(level)) {
                 levels.put(level, new ArrayList<>());
             }
 

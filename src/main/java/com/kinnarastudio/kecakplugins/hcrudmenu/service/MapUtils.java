@@ -10,6 +10,9 @@ import org.joget.apps.app.service.AppService;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.DataList;
 import org.joget.apps.form.model.Form;
+import org.joget.apps.form.model.FormDataDeletableBinder;
+import org.joget.apps.form.model.FormDeleteBinder;
+import org.joget.apps.form.model.FormStoreBinder;
 import org.joget.apps.form.service.FormService;
 import org.joget.apps.form.service.FormUtil;
 import org.joget.commons.util.SecurityUtil;
@@ -48,7 +51,12 @@ public class MapUtils {
 
         map.put("editable", optEditForm.isPresent() && !table.isReadonly());
 
-        map.put("deletable", optEditForm.isPresent() && !table.isReadonly());
+        final boolean isDeletableStoreBinder = optCreateForm
+                .map(Form::getStoreBinder)
+                .filter(sb -> sb instanceof FormDeleteBinder || sb instanceof FormDataDeletableBinder)
+                .isPresent();
+
+        map.put("deletable", isDeletableStoreBinder && !table.isReadonly());
 
         final String jsonCreateForm = optCreateForm.map(formService::generateElementJson).orElse("{}");
         map.put("jsonCreateForm", StringEscapeUtils.escapeHtml4(jsonCreateForm));
@@ -57,15 +65,14 @@ public class MapUtils {
         map.put("jsonEditForm", StringEscapeUtils.escapeHtml4(jsonEditForm));
 
         final String nonce = SecurityUtil.generateNonce(
-                new String[]{"EmbedForm", appDefinition.getAppId(), appDefinition.getVersion().toString(), jsonEditForm },
+                new String[]{"EmbedForm", appDefinition.getAppId(), appDefinition.getVersion().toString(), jsonEditForm},
                 1);
 
         map.put("nonce", nonce);
 
         map.put("height", 500);
         map.put("width", 900);
-
-        map.put("submitButtonLabel", table.isReadonly() ? "Close" : "Submit");
+        map.put("submitButtonLabel", table.getEditButtonLabel());
 
         final List<Map<String, String>> columns = Optional.of(dataList)
                 .map(DataList::getColumns)
@@ -124,13 +131,13 @@ public class MapUtils {
     public static Optional<Form> optForm(String formDefId) {
         ApplicationContext appContext = AppUtil.getApplicationContext();
         FormService formService = (FormService) appContext.getBean("formService");
-        FormDefinitionDao formDefinitionDao = (FormDefinitionDao)appContext.getBean("formDefinitionDao");
+        FormDefinitionDao formDefinitionDao = (FormDefinitionDao) appContext.getBean("formDefinitionDao");
         AppDefinition appDef = AppUtil.getCurrentAppDefinition();
 
         return Optional.of(formDefId)
                 .map(s -> formDefinitionDao.loadById(s, appDef))
                 .map(FormDefinition::getJson)
                 .map(formService::createElementFromJson)
-                .map(e -> (Form)e);
+                .map(e -> (Form) e);
     }
 }

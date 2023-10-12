@@ -51,7 +51,7 @@
             <#assign dataListLabel=table.label>
 
             <div id="${elementId}_tabcontent" class="hcrud-tabcontent" data-hcrud-id="${elementId}" data-hcrud-level="${tables?index}" data-hcrud-parent="${table.parent!}">
-                <input type="hidden" disabled="disabled" id="formUrl" value="${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=${table.submitButtonLabel!'Submit'}" />
+                <input type="hidden" disabled="disabled" id="formUrl" value="${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=${table.submitButtonLabel!Submit}" />
                 <input type="hidden" disabled="disabled" id="createFormJson" value="${table.jsonCreateForm}" />
                 <input type="hidden" disabled="disabled" id="editFormJson" value="${table.jsonEditForm}" />
                 <input type="hidden" disabled="disabled" id="nonce" value="${table.nonce}" />
@@ -118,7 +118,7 @@
                             }
                         }
 
-                        <#if table.createFormId?? && table.deletable!false >
+                        <#if table.createFormId?? >
                             ,{
                                 text: '<i class="fa fa-file"/>',
                                 attr : { disabled: ${(tables?index != 0)?string} },
@@ -215,7 +215,7 @@
                             },
                         </#if>
 
-                        <#if table.createFormId?? && table.deletable!false >
+                        <#if table.deletable!false >
                             {
                                 data: null,
                                 className: 'dt-center inlineaction inlineaction-delete',
@@ -282,7 +282,7 @@
 
                     let dt = ${dataTableVariable};
                     let elementId = dt.table().node().id;
-                    let primaryKey = dt.row().data()._id;
+                    let primaryKey = dt.row(this).data()._id;
 
                     deleteFormData('${table.createFormId!''}', primaryKey, dt);
                 });
