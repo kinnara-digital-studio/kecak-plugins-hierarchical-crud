@@ -54,7 +54,8 @@
                 <input type="hidden" disabled="disabled" id="formUrl" value="${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=${table.submitButtonLabel!Submit}" />
                 <input type="hidden" disabled="disabled" id="createFormJson" value="${table.jsonCreateForm}" />
                 <input type="hidden" disabled="disabled" id="editFormJson" value="${table.jsonEditForm}" />
-                <input type="hidden" disabled="disabled" id="nonce" value="${table.nonce}" />
+                <input type="hidden" disabled="disabled" id="nonceEdit" value="${table.nonceEdit}" />
+                <input type="hidden" disabled="disabled" id="nonceCreate" value="${table.nonceCreate}" />
                 <input type="hidden" disabled="disabled" id="height" value="${table.height}" />
                 <input type="hidden" disabled="disabled" id="width" value="${table.width}" />
 
@@ -129,7 +130,7 @@
                                     let $tabcontent = $table.parents('.hcrud-tabcontent');
                                     let formUrl = $tabcontent.find('input#formUrl').val();
                                     let jsonForm = JSON.parse($tabcontent.find('input#createFormJson').val());
-                                    let nonce = $tabcontent.find('input#nonce').val();
+                                    let nonce = $tabcontent.find('input#nonceCreate').val();
                                     let callback = 'onFormSubmitted';
                                     let elementId = dt.table().node().id;
                                     let jsonSetting = { elementId : elementId };
@@ -265,7 +266,7 @@
 
                     let formUrl = $('#${elementId}_tabcontent input#formUrl').val();
                     let jsonForm = JSON.parse($('#${elementId}_tabcontent input#editFormJson').val());
-                    let nonce = $('#${elementId}_tabcontent input#nonce').val();
+                    let nonce = $('#${elementId}_tabcontent input#nonceEdit').val();
                     let callback = 'onFormSubmitted';
                     let jsonSetting = { 'elementId' : '${elementId}' };
                     let primaryKey = ${dataTableVariable}.row(this).data()._id;

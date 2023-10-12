@@ -64,11 +64,15 @@ public class MapUtils {
         final String jsonEditForm = optEditForm.map(formService::generateElementJson).orElse("{}");
         map.put("jsonEditForm", StringEscapeUtils.escapeHtml4(jsonEditForm));
 
-        final String nonce = SecurityUtil.generateNonce(
+        final String nonceEdit = SecurityUtil.generateNonce(
                 new String[]{"EmbedForm", appDefinition.getAppId(), appDefinition.getVersion().toString(), jsonEditForm},
                 1);
+        map.put("nonceEdit", nonceEdit);
 
-        map.put("nonce", nonce);
+        final String nonceCreate = SecurityUtil.generateNonce(
+                new String[]{"EmbedForm", appDefinition.getAppId(), appDefinition.getVersion().toString(), jsonCreateForm},
+                1);
+        map.put("nonceCreate", nonceCreate);
 
         map.put("height", 500);
         map.put("width", 900);
