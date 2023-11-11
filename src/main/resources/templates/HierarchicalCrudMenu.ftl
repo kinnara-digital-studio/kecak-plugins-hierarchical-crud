@@ -51,7 +51,8 @@
             <#assign dataListLabel=table.label>
 
             <div id="${elementId}_tabcontent" class="hcrud-tabcontent" data-hcrud-id="${elementId}" data-hcrud-level="${tables?index}" data-hcrud-parent="${table.parent!}">
-                <input type="hidden" disabled="disabled" id="formUrl" value="${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=${table.submitButtonLabel!Submit}" />
+                <input type="hidden" disabled="disabled" id="createFormUrl" value="${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=Submit" />
+                <input type="hidden" disabled="disabled" id="editFormUrl" value="${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=${table.submitButtonLabel!Submit}" />
                 <input type="hidden" disabled="disabled" id="createFormJson" value="${table.jsonCreateForm}" />
                 <input type="hidden" disabled="disabled" id="editFormJson" value="${table.jsonEditForm}" />
                 <input type="hidden" disabled="disabled" id="nonceEdit" value="${table.nonceEdit}" />
@@ -67,7 +68,10 @@
                     <thead>
                         <tr>
                             <th>_id</th>
-                            <th></th>
+
+                            <#if table.editFormId?? >
+                                <th></th>
+                            </#if>
 
                             <#if table.deletable!false >
                                 <th></th>
@@ -128,7 +132,7 @@
 
                                     let $table = $(dt.table().node());
                                     let $tabcontent = $table.parents('.hcrud-tabcontent');
-                                    let formUrl = $tabcontent.find('input#formUrl').val();
+                                    let formUrl = $tabcontent.find('input#createFormUrl').val();
                                     let jsonForm = JSON.parse($tabcontent.find('input#createFormJson').val());
                                     let nonce = $tabcontent.find('input#nonceCreate').val();
                                     let callback = 'onFormSubmitted';
@@ -264,7 +268,7 @@
                 $('#${elementId}').on('click', 'td.inlineaction-edit', function (e) {
                     e.preventDefault();
 
-                    let formUrl = $('#${elementId}_tabcontent input#formUrl').val();
+                    let formUrl = $('#${elementId}_tabcontent input#editFormUrl').val();
                     let jsonForm = JSON.parse($('#${elementId}_tabcontent input#editFormJson').val());
                     let nonce = $('#${elementId}_tabcontent input#nonceEdit').val();
                     let callback = 'onFormSubmitted';

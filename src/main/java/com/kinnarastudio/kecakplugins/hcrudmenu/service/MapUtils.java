@@ -45,6 +45,14 @@ public class MapUtils {
 
         map.put("dataListId", dataList.getId());
 
+        final List<Map<String, String>> actions = Optional.of(dataList).map(DataList::getActions)
+                .map(Arrays::stream)
+                .orElseGet(Stream::empty)
+                .map(a -> {
+                    final Map<String, String> m = new HashMap<>();
+                    return m;
+                }).collect(Collectors.toList());
+
         optCreateForm.map(f -> f.getPropertyString("id")).ifPresent(s -> map.put("createFormId", s));
 
         optEditForm.map(f -> f.getPropertyString("id")).ifPresent(s -> map.put("editFormId", s));

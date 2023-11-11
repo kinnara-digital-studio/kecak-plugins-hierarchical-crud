@@ -1,5 +1,6 @@
 package com.kinnarastudio.kecakplugins.hcrudmenu;
 
+import com.kinnarastudio.kecakplugins.hcrudmenu.datalist.HierarchicalCrudForeignKeyFilter;
 import com.kinnarastudio.kecakplugins.hcrudmenu.menu.HierarchicalCrudMenu;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -17,6 +18,7 @@ public class Activator implements BundleActivator {
 
         //Register plugin here
         registrationList.add(context.registerService(HierarchicalCrudMenu.class.getName(), new HierarchicalCrudMenu(), null));
+        registrationList.add(context.registerService(HierarchicalCrudForeignKeyFilter.class.getName(), new HierarchicalCrudForeignKeyFilter(), null));
 //        registrationList.add(context.registerService(HierarchicalCrudFormBinder.class.getName(), new HierarchicalCrudFormBinder(), null));
     }
 

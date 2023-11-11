@@ -23,6 +23,16 @@
                 "value": "HCRUD"
             },
             {
+                "name": "rowCount",
+                "label" : "@@userview.hcrudmenu.rowCount@@",
+                "type" : "checkbox",
+                "value" : "false",
+                "options" : [{
+                    "value" : "true",
+                    "label" : ""
+                }]
+            },
+            {
                 "name": "tables",
                 "label": "Tables",
                 "type": "grid",

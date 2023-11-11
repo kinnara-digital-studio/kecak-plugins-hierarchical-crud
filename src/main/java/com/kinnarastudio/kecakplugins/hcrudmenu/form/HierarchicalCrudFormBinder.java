@@ -1,4 +1,4 @@
-package com.kinnarastudio.kecakplugins.hcrudmenu.formBinder;
+package com.kinnarastudio.kecakplugins.hcrudmenu.form;
 
 import com.kinnarastudio.commons.Declutter;
 import com.kinnarastudio.commons.Try;
@@ -9,7 +9,6 @@ import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.form.lib.WorkflowFormBinder;
 import org.joget.apps.form.model.*;
 import org.joget.apps.form.service.FormUtil;
-import org.joget.commons.util.LogUtil;
 import org.joget.plugin.base.PluginManager;
 import org.joget.workflow.util.WorkflowUtil;
 import org.json.JSONObject;

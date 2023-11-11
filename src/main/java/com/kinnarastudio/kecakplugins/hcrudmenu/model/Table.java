@@ -1,6 +1,7 @@
 package com.kinnarastudio.kecakplugins.hcrudmenu.model;
 
 import org.joget.apps.datalist.model.DataList;
+import org.joget.apps.datalist.model.DataListAction;
 import org.joget.apps.form.model.Form;
 
 import javax.annotation.Nullable;

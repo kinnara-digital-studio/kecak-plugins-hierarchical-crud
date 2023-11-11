@@ -5,13 +5,17 @@ import com.kinnarastudio.kecakplugins.hcrudmenu.service.MapUtils;
 import org.joget.apps.app.dao.DatalistDefinitionDao;
 import org.joget.apps.app.model.AppDefinition;
 import org.joget.apps.app.model.DatalistDefinition;
+import org.joget.apps.app.service.AppService;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.DataList;
 import org.joget.apps.datalist.service.DataListService;
 import org.joget.apps.form.model.Form;
+import org.joget.apps.userview.model.Userview;
 import org.joget.apps.userview.model.UserviewMenu;
+import org.joget.commons.util.StringUtil;
 import org.joget.plugin.base.PluginManager;
 import org.joget.workflow.util.WorkflowUtil;
+import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 
 import javax.annotation.Nonnull;
@@ -71,6 +75,27 @@ public class HierarchicalCrudMenu extends UserviewMenu {
 
     @Override
     public String getDecoratedMenu() {
+        final boolean showRowCount = "true".equalsIgnoreCase(getPropertyString("rowCount"));
+
+        final Map<String, String>[] propertyTables = getPropertyGrid("tables");
+
+        if (showRowCount) {
+            final String rowCount = Arrays.stream(propertyTables)
+                    .filter(p -> p.getOrDefault("parentDataListId", "").isEmpty())
+                    .map(p -> p.getOrDefault("dataListId", ""))
+                    .map(this::optDataList)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .map(DataList::getTotal)
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(","));
+
+            String label = getPropertyString("label");
+            if (label != null) {
+                label = StringUtil.stripHtmlRelaxed(label);
+            }
+            return "<a href=\"" + getUrl() + "\" class=\"menu-link default\"><span>" + label + "</span> <span class='rowCount'>(" + rowCount + ")</span></a>";
+        }
         return null;
     }
 
