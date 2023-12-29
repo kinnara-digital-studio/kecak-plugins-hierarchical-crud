@@ -5,17 +5,14 @@ import com.kinnarastudio.kecakplugins.hcrudmenu.service.MapUtils;
 import org.joget.apps.app.dao.DatalistDefinitionDao;
 import org.joget.apps.app.model.AppDefinition;
 import org.joget.apps.app.model.DatalistDefinition;
-import org.joget.apps.app.service.AppService;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.DataList;
 import org.joget.apps.datalist.service.DataListService;
 import org.joget.apps.form.model.Form;
-import org.joget.apps.userview.model.Userview;
 import org.joget.apps.userview.model.UserviewMenu;
 import org.joget.commons.util.StringUtil;
 import org.joget.plugin.base.PluginManager;
 import org.joget.workflow.util.WorkflowUtil;
-import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 
 import javax.annotation.Nonnull;
@@ -28,6 +25,7 @@ import java.util.stream.Stream;
  * Hierarchical CRUD Menu
  */
 public class HierarchicalCrudMenu extends UserviewMenu {
+    public final static String LABEL = "HCrud";
     @Override
     public String getCategory() {
         return "Kecak";
@@ -101,7 +99,7 @@ public class HierarchicalCrudMenu extends UserviewMenu {
 
     @Override
     public String getName() {
-        return getLabel();
+        return LABEL;
     }
 
     @Override
@@ -118,7 +116,7 @@ public class HierarchicalCrudMenu extends UserviewMenu {
 
     @Override
     public String getLabel() {
-        return "HCrud";
+        return LABEL;
     }
 
     @Override

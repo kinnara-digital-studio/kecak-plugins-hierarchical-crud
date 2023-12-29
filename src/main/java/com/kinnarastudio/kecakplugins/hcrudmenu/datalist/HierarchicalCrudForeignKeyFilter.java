@@ -9,7 +9,7 @@ import org.joget.plugin.base.PluginManager;
 import java.util.ResourceBundle;
 
 public class HierarchicalCrudForeignKeyFilter extends TextFieldDataListFilterType {
-    public final static String LABEL = "Hcrud FK Filter";
+    public final static String LABEL = "HCrud FK Filter";
     @Override
     public String getTemplate(DataList datalist, String name, String label) {
         return "";
